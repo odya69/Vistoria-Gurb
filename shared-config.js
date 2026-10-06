@@ -8,5 +8,5 @@
    ============================================================ */
 window.SHARED_CONFIG = {
   URL: "https://odya69.github.io/Vistoria-Gurb/",
-  KEY: "sb_publishable_NDsc7nNGSKAs0Oa0XWXh9w_Ap5BzgFw"
+  KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdheW9rZGZ1amJ5cGpramFqcXJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNDgzODUsImV4cCI6MjEwNjgyNDM4NX0.X-pHm2B3rV9fVW8fJnGPYiwnMlXf4dmrcmJgx02SZJs"
 };
