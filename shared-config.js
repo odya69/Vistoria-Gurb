@@ -7,6 +7,6 @@
    Enquanto estiver com "COLE_AQUI", o app funciona só neste aparelho.
    ============================================================ */
 window.SHARED_CONFIG = {
-  URL: "COLE_AQUI_A_URL_DO_PROJETO",
+  URL: "https://odya69.github.io/Vistoria-Gurb/",
   KEY: "sb_publishable_NDsc7nNGSKAs0Oa0XWXh9w_Ap5BzgFw"
 };
