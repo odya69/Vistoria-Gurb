@@ -1,9 +1,12 @@
-const CACHE = "vistorias-v2";
+const CACHE = "vistorias-v3";
 const ARQUIVOS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./drive-config.js",
+  "./shared-config.js",
+  "./shared.js",
+  "./icons/logo.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",
@@ -42,7 +45,7 @@ self.addEventListener("fetch", e => {
   }
 
   // Configuração do Drive: rede primeiro, para a edição valer na hora
-  if (url.pathname.endsWith("/drive-config.js")) {
+  if ((url.pathname.endsWith("/drive-config.js")||url.pathname.endsWith("/shared-config.js")||url.pathname.endsWith("/shared.js"))) {
     e.respondWith(
       fetch(req).then(r => { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(req, c)); return r; })
         .catch(() => caches.match(req))

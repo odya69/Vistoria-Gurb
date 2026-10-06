@@ -378,7 +378,7 @@ async function gLoad(file){const m=$("gmsg");m.textContent="";
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function openDB(){return new Promise((ok,no)=>{const q=indexedDB.open("relfoto_db",2);q.onupgradeneeded=()=>{const d=q.result;if(!d.objectStoreNames.contains("r"))d.createObjectStore("r",{keyPath:"id"});if(!d.objectStoreNames.contains("g"))d.createObjectStore("g",{keyPath:"id"})};q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)})}
 function tx(mode,fn){return new Promise((ok,no)=>{const t=DB.transaction("r",mode),rq=fn(t.objectStore("r"));t.oncomplete=()=>ok(rq&&rq.result);t.onerror=()=>no(t.error)})}
-const dbAll=()=>tx("readonly",s=>s.getAll()),dbPut=o=>tx("readwrite",s=>s.put(o)),dbDel=id=>tx("readwrite",s=>s.delete(id));
+const dbAll=()=>tx("readonly",s=>s.getAll()),dbPut=o=>tx("readwrite",s=>s.put(o)).then(r=>{window.syncPut&&syncPut(o);return r}),dbDel=id=>tx("readwrite",s=>s.delete(id)).then(r=>{window.syncDel&&syncDel(id);return r});
 function cur(){try{localStorage.setItem("relfoto_cur",S.id)}catch(e){}}
 async function flush(){clearTimeout(timer);if(!dirty)return;if(!DB){$("msg").textContent="Este navegador não permite salvar os relatórios. Gere o PDF antes de sair.";return}
  try{dirty=false;S.t=Date.now();await dbPut(S);cur();$("msg").textContent="";await list()}catch(e){dirty=true;$("msg").textContent="Não foi possível salvar (espaço cheio?). Gere o PDF e exclua relatórios antigos."}}
@@ -460,6 +460,7 @@ document.querySelectorAll(".tipo").forEach(b=>b.onclick=()=>escolher(b.dataset.t
 const voltar=async()=>{await flush();document.body.classList.remove("prev");$("pvbar").hidden=true;$("app").hidden=true;$("home").hidden=false;scrollTo(0,0)};
 $("homeb").onclick=voltar;$("homeb2").onclick=voltar;
 $("home").prepend(document.querySelector(".logos").cloneNode(true));
+$("home").insertAdjacentHTML("afterbegin",'<div style="text-align:center;margin-top:6px"><img src="icons/logo.png" alt="Prefeitura de Teresina" style="height:120px;width:auto"></div>');
 const CAMP=["proc","insc","data","ana","lot","rua","numero","quadra","nlote","bairro"];
 $("cadb").onclick=()=>{$("dl_ana").innerHTML=FIXOS.map(n=>`<option value="${esc(n)}">`).join("");$("dl_lot").innerHTML=CFG.lotes.map(z=>`<option value="${esc(z.n)}">`).join("");$("c_msg").textContent="";$("cad").hidden=false;$("cad").scrollIntoView()};
 $("c_x").onclick=()=>{$("cad").hidden=true;scrollTo(0,0)};
@@ -554,6 +555,8 @@ build();
  paint();list()})();
 </script>
 <script src="drive-config.js"></script>
+<script src="shared-config.js"></script>
+<script src="shared.js"></script>
 <script>
 /* Integração com Google Drive (login OAuth + envio de relatórios).
    Usa Google Identity Services (token client) e a Drive API v3. */

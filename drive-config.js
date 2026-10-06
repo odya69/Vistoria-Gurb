@@ -10,7 +10,7 @@
    CLIENT_ID: "1234567890-abcdefg.apps.googleusercontent.com",
    ============================================================ */
 window.DRIVE_CONFIG = {
-  CLIENT_ID: "836621528367-3cvs07pj8fp8etvn3m74ot75b8di0kqi.apps.googleusercontent.com",
+  CLIENT_ID: "COLE_AQUI_SEU_CLIENT_ID.apps.googleusercontent.com",
 
   /* Nome da pasta criada no Drive de quem entrar (pode deixar assim) */
   FOLDER_NAME: "Relatórios GURB Norte",
