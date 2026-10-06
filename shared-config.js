@@ -8,5 +8,5 @@
    ============================================================ */
 window.SHARED_CONFIG = {
   URL: "COLE_AQUI_A_URL_DO_PROJETO",
-  KEY: "COLE_AQUI_A_CHAVE_ANON"
+  KEY: "sb_publishable_NDsc7nNGSKAs0Oa0XWXh9w_Ap5BzgFw"
 };
