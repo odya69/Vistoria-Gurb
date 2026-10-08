@@ -133,6 +133,14 @@ body.prev .gear{display:none}
 @media screen{body{padding-top:calc(48px + env(safe-area-inset-top,0px))}}
 @media print{.gear,.gbox{display:none!important}}
 #pdfarea{display:none}
+.mini{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:center;margin-top:22px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;text-align:center}
+.mini .lbl{margin:0}
+.mini .btn{min-height:36px;padding:5px 12px}
+#stbox{display:block;margin-top:10px}
+.stbar{height:10px;background:#e6ebf6;border-radius:5px;overflow:hidden;margin-top:6px}
+.stbar i{display:block;height:100%;width:0;background:var(--acc);transition:width .3s}
+.stbar.warn i{background:#b45309}.stbar.crit i{background:var(--nao)}
+#cfg .gbox h2{margin-top:-14px;padding-right:16px}
 .tabs{display:flex;gap:8px;margin:0 0 14px}
 .tabs button{flex:1;min-height:48px;padding:10px 8px;border:2px solid var(--acc);background:var(--bg);color:var(--acc);border-radius:6px;font:700 1rem "Trebuchet MS",Verdana,system-ui,sans-serif;cursor:pointer}
 .tabs button[aria-pressed="true"]{background:var(--acc);color:#fff}
@@ -161,17 +169,11 @@ body.pdfd .photos{grid-template-columns:repeat(2,1fr)}
 <div id="dpbar" class="pvbar" hidden><span class="lbl" id="dplbl">PDF da data</span><button class="btn ghost sm" id="dpx">Voltar</button><button class="btn sm" id="dpp">Gerar PDF</button></div>
 <div id="home" class="home">
  <h1>Relatório fotográfico</h1>
- <div class="gbox noprint">
-  <h2>Google Drive</h2>
-  <p class="lbl" style="margin:0 0 8px">Entre com sua conta Google para enviar relatórios e fotos a uma pasta do seu Drive. O app só acessa os arquivos que ele mesmo criar.</p>
-  <p class="lbl" id="dstat" role="status"></p>
-  <div class="bar"><button class="btn" id="dlogin" type="button">Entrar com Google</button><button class="btn ghost" id="dlogout" type="button" hidden>Sair</button><button class="btn ghost" id="dbackup" type="button" hidden>Enviar backup completo ao Drive</button></div>
-  <p class="empty" id="dmsg" role="status"></p>
- </div>
- <p class="sub">Escolha o tipo de processo</p>
+  <p class="sub">Escolha o tipo de processo</p>
  <div class="tipos"><button class="tipo" data-t="habite">Habite-se</button><button class="tipo off" data-t="regul" disabled aria-disabled="true">Auto de regularização<small>Em breve</small></button><button class="tipo off" data-t="acess" disabled aria-disabled="true">Acessibilidade<small>Em breve</small></button></div>
  <div class="bar" style="justify-content:center;margin-top:26px"><button class="btn ghost sm" id="bexp2">Exportar relatórios</button><label class="btn ghost sm" style="cursor:pointer">Importar relatórios<input id="bimp2" type="file" accept=".json,application/json" hidden></label></div>
  <p class="empty" id="bmsg2" role="status" style="text-align:center"></p>
+ <div id="stbox" class="mini noprint"><div style="width:100%"><div class="lbl" id="sttx">Armazenamento: calculando...</div><div class="stbar" id="stpb" role="progressbar" aria-label="Armazenamento usado" aria-valuemin="0" aria-valuemax="100"><i id="stfill"></i></div></div></div>
 </div>
 <div id="rvm" class="modal noprint" hidden role="dialog" aria-modal="true" aria-labelledby="rvt"><div class="box">
  <h3 id="rvt">Marcar para revistoria</h3>
@@ -188,8 +190,18 @@ body.pdfd .photos{grid-template-columns:repeat(2,1fr)}
   <p class="lbl" style="margin:4px 0 8px">Exporta todos os relatórios (de todos os tipos de processo, com fotos e histórico), as configurações e o arquivo de mapa para um único arquivo. Use para guardar uma cópia ou levar os dados para outro aparelho. Ao importar, nada é apagado: relatórios novos são adicionados e os já existentes só são trocados se o arquivo tiver uma versão mais recente.</p>
   <div class="bar"><button class="btn ghost sm" id="bexp">Exportar todos os relatórios</button><label class="btn ghost sm" style="cursor:pointer">Importar relatórios<input id="bimp" type="file" accept=".json,application/json" hidden></label></div>
   <p class="empty" id="bmsg" role="status"></p>
+<div class="gbox noprint">
+   <h2>Google Drive</h2>
+   <p class="lbl" style="margin:0 0 8px">Entre com sua conta Google para enviar relatórios e fotos a uma pasta do seu Drive. O app só acessa os arquivos que ele mesmo criar.</p>
+   <p class="lbl" id="dstat" role="status"></p>
+   <div class="bar"><button class="btn" id="dlogin" type="button">Entrar com Google</button><button class="btn ghost" id="dlogout" type="button" hidden>Sair</button><button class="btn ghost" id="dbackup" type="button" hidden>Enviar backup completo ao Drive</button></div>
+   <p class="empty" id="dmsg" role="status"></p>
+  </div>
+  <h3 class="grp" style="margin-top:14px">Aplicativo de mapa</h3>
+  <p class="lbl" style="margin:4px 0 8px" id="mpst"></p>
+  <div class="bar"><button class="btn ghost sm" id="mpalt" type="button"></button></div>
   <h3 class="grp" style="margin-top:14px">Mapa (arquivo GeoJSON)</h3>
-  <p class="lbl" style="margin:4px 0 8px">Carregue um GeoJSON com os pontos e escolha o atributo que contém a inscrição imobiliária. Cada processo com a mesma inscrição ganha um link para abrir o local no OpenStreetMap. O arquivo é lido no próprio aparelho.</p>
+  <p class="lbl" style="margin:4px 0 8px">Carregue um GeoJSON com os pontos e escolha o atributo que contém a inscrição imobiliária. Cada processo com a mesma inscrição ganha um link para abrir o local no mapa escolhido acima (Google Maps ou OpenStreetMap). O arquivo é lido no próprio aparelho.</p>
   <div class="bar"><label class="btn ghost sm" style="cursor:pointer">Carregar GeoJSON<input id="gfile" type="file" accept=".geojson,.json,application/geo+json,application/json" hidden></label><button class="btn ghost sm" id="grem" hidden>Remover arquivo</button></div>
   <div class="f" id="gsel" hidden style="margin-top:8px;max-width:340px"><label class="lbl" for="gattr">Atributo com a inscrição imobiliária</label><select id="gattr"></select></div>
   <p class="lbl" id="gst"></p><p class="empty" id="gmsg" role="status" style="color:var(--nao)"></p>
@@ -197,10 +209,6 @@ body.pdfd .photos{grid-template-columns:repeat(2,1fr)}
    <div class="f"><label class="lbl" for="cfaixa">Faixa livre mínima (m)</label><input id="cfaixa" type="number" inputmode="decimal" step="0.01" min="0"></div>
    <div class="f"><label class="lbl" for="carv">Caixa de árvore mínima (m²)</label><input id="carv" type="number" inputmode="decimal" step="0.01" min="0"></div>
   </div>
-  <h3 class="grp" style="margin-top:4px">Backup dos relatórios</h3>
-  <p class="lbl" style="margin:4px 0 8px">Exporte todos os relatórios, de todos os tipos de processo, com fotos, histórico e configurações, para um arquivo. Use-o para guardar uma cópia ou levar os dados a outro aparelho. A importação não apaga nada: ela só adiciona relatórios novos ou atualiza os que forem mais recentes no arquivo.</p>
-  <div class="bar"><button class="btn sm" id="bexp">Exportar todos os relatórios</button><label class="btn ghost sm" style="cursor:pointer">Importar relatórios<input id="bimp" type="file" accept=".json,application/json" hidden></label></div>
-  <p class="empty" id="bmsg" role="status" style="margin-bottom:14px"></p>
   <button class="btn ghost" id="cfgx">Fechar configurações</button>
  </section>
 <div id="pdfarea"></div>
@@ -343,7 +351,7 @@ const blank=()=>({id:"r"+Date.now().toString(36),f:{},c:{},m:{},p:[],t:Date.now(
 let S=blank(),DB=null,timer=null,dirty=false;
 const FIXOS=["Maisa Fugita","Francisco Arlon","Carol Pinheiro"];
 const LOTES=["Granville","Conviver","Jardim Monte Verde","Cajuí","Cidade 2000"];
-let CFG={lotes:[{n:"Granville",m:""},{n:"Conviver",m:"2.5"},{n:"Jardim Monte Verde",m:"2"},{n:"Cajuí",m:"2"},{n:"Cidade 2000",m:""}],faixa:"1.2",arv:"2"};
+let CFG={lotes:[{n:"Granville",m:""},{n:"Conviver",m:"2.5"},{n:"Jardim Monte Verde",m:"2"},{n:"Cajuí",m:"2"},{n:"Cidade 2000",m:""}],faixa:"1.2",arv:"2",mapa:"google"};
 try{const c=localStorage.getItem("relfoto_cfg");if(c)CFG=Object.assign(CFG,JSON.parse(c));else{const o=JSON.parse(localStorage.getItem("relfoto_minc")||"{}");Object.keys(o).forEach(k=>{const l=CFG.lotes.find(z=>z.n.toLowerCase()===k);if(l&&o[k]!=="")l.m=o[k]})}}catch(e){}
 function cfgSave(){try{localStorage.setItem("relfoto_cfg",JSON.stringify(CFG))}catch(e){}}
 const num=v=>{const n=parseFloat(String(v==null?"":v).replace(",","."));return isNaN(n)?null:n};
@@ -389,13 +397,42 @@ let GEO=null,GIDX={};
 const gTx=(mode,fn)=>new Promise((ok,no)=>{const t=DB.transaction("g",mode),rq=fn(t.objectStore("g"));t.oncomplete=()=>ok(rq&&rq.result);t.onerror=()=>no(t.error)});
 const gn=v=>String(v==null?"":v).toLowerCase().replace(/[^a-z0-9]/g,"");
 function gBuild(){GIDX={};if(!GEO||!GEO.attr)return;GEO.pts.forEach(q=>{const k=gn(q.p[GEO.attr]);if(k&&!GIDX[k])GIDX[k]=q})}
-const gLink=q=>`https://www.openstreetmap.org/?mlat=${q.la}&mlon=${q.lo}#map=19/${q.la}/${q.lo}`;
+const mapaNome=()=>CFG.mapa==="osm"?"OpenStreetMap":"Google Maps";
+const gLink=q=>CFG.mapa==="osm"?`https://www.openstreetmap.org/?mlat=${q.la}&mlon=${q.lo}#map=19/${q.la}/${q.lo}`:`https://www.google.com/maps/search/?api=1&query=${q.la},${q.lo}`;
 const gFind=x=>GIDX[gn(x.f.insc)]||null;
+/* ordem da rota: caminho mais curto entre os pontos (vizinho mais próximo + 2-opt), por data */
+const hav=(a,b)=>{const R=6371000,r=Math.PI/180,dl=(b.la-a.la)*r,dn=(b.lo-a.lo)*r,h=Math.sin(dl/2)**2+Math.cos(a.la*r)*Math.cos(b.la*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
+const fmtDist=m=>m<1000?Math.round(m/10)*10+" m":(m/1000).toFixed(1).replace(".",",")+" km";
+function vizinho(arr,info){
+ const com=[],sem=[];arr.forEach(x=>{const q=gFind(x);q?com.push({x,q}):sem.push(x)});
+ const n=com.length;let ord=com.map(c=>c.x);
+ if(n>=2){
+  const D=com.map(a=>com.map(b=>hav(a.q,b.q))),len=r=>{let t=0;for(let i=1;i<r.length;i++)t+=D[r[i-1]][r[i]];return t};
+  let best=null,bl=Infinity;
+  for(let s0=0;s0<n;s0++){
+   const r=[s0],u=new Set(r);
+   for(let k=1;k<n;k++){const c=r[r.length-1];let m=-1,md=Infinity;for(let j=0;j<n;j++)if(!u.has(j)&&D[c][j]<md){md=D[c][j];m=j}r.push(m);u.add(m)}
+   let imp=true,it=0;
+   while(imp&&it++<50){imp=false;for(let i=0;i<n-1;i++)for(let j=i+1;j<n;j++){
+    const a=i>0?D[r[i-1]][r[i]]:0,b=j<n-1?D[r[j]][r[j+1]]:0,a2=i>0?D[r[i-1]][r[j]]:0,b2=j<n-1?D[r[i]][r[j+1]]:0;
+    if(a2+b2<a+b-1e-6){const seg=r.slice(i,j+1).reverse();r.splice(i,j-i+1,...seg);imp=true}}}
+   const l=len(r);if(l<bl-1e-6){bl=l;best=r}}
+  ord=best.map(i=>com[i].x);
+  ord.forEach((x,i)=>{info[x.id]={n:i+1,d:i>0?hav(gFind(ord[i-1]),gFind(x)):null}});
+ }else if(n===1)info[ord[0].id]={n:1,d:null};
+ sem.forEach((x,i)=>{info[x.id]={n:ord.length+i+1,d:null,sc:true}});
+ return ord.concat(sem)}
+function rotaOrdem(arr,info){
+ const por={};arr.forEach(x=>{const d=x.f.data||"";(por[d]=por[d]||[]).push(x)});
+ let out=[];Object.keys(por).sort((p,q)=>(p||"9").localeCompare(q||"9")).forEach(d=>{out=out.concat(vizinho(por[d],info))});return out}
+function ordemPorAnalista(arr){
+ const kk=x=>(x.f.analista||"").trim().toLowerCase(),g={};arr.forEach(x=>{(g[kk(x)]=g[kk(x)]||[]).push(x)});
+ let out=[];Object.keys(g).sort((a,b)=>a===""?1:b===""?-1:a.localeCompare(b)).forEach(k=>{out=out.concat(rotaOrdem(g[k],{}))});return out}
 function centro(g){if(!g||!g.coordinates)return null;const c=[];const w=a=>{if(typeof a[0]==="number")c.push(a);else a.forEach(w)};w(g.coordinates);if(!c.length)return null;
  if(g.type==="Point"||g.type==="MultiPoint")return c[0];return[c.reduce((t,z)=>t+z[0],0)/c.length,c.reduce((t,z)=>t+z[1],0)/c.length]}
 const gKeys=()=>[...new Set(GEO.pts.slice(0,100).flatMap(q=>Object.keys(q.p)))];
 function gForm(){const q=gFind(S),el=$("ginfo");
- el.innerHTML=!GEO?'<span class="lbl noprint">Carregue um GeoJSON em Configurações para ver o ponto do processo.</span>':!(S.f.insc||"").trim()?'<span class="lbl noprint">Informe a inscrição imobiliária para localizar o ponto no mapa.</span>':q?`<a class="noprint" href="${gLink(q)}" target="_blank" rel="noopener">Abrir no OpenStreetMap</a> <span class="lbl">(${q.la}, ${q.lo})</span>`:'<span class="lbl noprint">Nenhum ponto encontrado para esta inscrição imobiliária.</span>'}
+ el.innerHTML=!GEO?'<span class="lbl noprint">Carregue um GeoJSON em Configurações para ver o ponto do processo.</span>':!(S.f.insc||"").trim()?'<span class="lbl noprint">Informe a inscrição imobiliária para localizar o ponto no mapa.</span>':q?`<a class="noprint" href="${gLink(q)}" target="_blank" rel="noopener">Abrir no ${mapaNome()}</a> <span class="lbl">(${q.la}, ${q.lo})</span>`:'<span class="lbl noprint">Nenhum ponto encontrado para esta inscrição imobiliária.</span>'}
 async function gUI(){$("grem").hidden=!GEO;$("gsel").hidden=!GEO;
  if(!GEO){$("gst").textContent="Nenhum arquivo carregado.";return}
  $("gattr").innerHTML=gKeys().map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join("");$("gattr").value=GEO.attr;
@@ -434,13 +471,21 @@ async function list(){let a=[];try{a=DB?await dbAll():[]}catch(e){}
  v=VIEW==="ok"?vOk:vAg;
  const g={};v.forEach(x=>{const k=key(x)||"__sem";(g[k]=g[k]||[]).push(x)});
  const ks=Object.keys(g).sort((x,y)=>x==="__sem"?1:y==="__sem"?-1:x.localeCompare(y));
- const item=x=>{const k=(x.f.proc||"").trim(),fe=feito(x),hn=(x.hist||[]).length,re=!fe&&hn>0,np=fe?pends(x).p.length:0,gp=gFind(x);return `<div class="rel${x.id===S.id?" cur":""}"><div><strong>Processo ${esc(k)||"sem número"}</strong> <span class="st ${x.c.fechado==="Sim"?"rv":fe?"ok2":re?"rv":"ag"}">${x.c.fechado==="Sim"?"Imóvel fechado":fe?(hn?"Vistoriado ("+(hn+1)+"ª)":"Vistoriado"):re?"A revistoriar":"A vistoriar"}</span>${n[k]>1?' <span class="dup">número repetido</span>':""}<div class="lbl">${x.f.data?"Vistoria "+fd(x.f.data)+" - ":""}${esc(addr(x)||"Sem endereço")}${x.f.lote?" - "+esc(x.f.lote):""} - ${x.p.length} foto(s)${np?` - <span class="dup">${np} pendência(s)</span>`:""}</div></div><div class="bar"><button class="btn ghost sm" data-open="${x.id}">Abrir</button>${fe?`<button class="btn sm" data-pdf="${x.id}">PDF</button>`:""}${gp?`<a class="btn ghost sm" href="${gLink(gp)}" target="_blank" rel="noopener">Mapa</a>`:""}${fe?`<button class="btn ghost sm" data-rev="${x.id}">Revistoriar</button>`:""}<button class="btn ghost sm" data-del="${x.id}">Excluir</button></div></div>`};
+ const ROT={};if(VIEW==="ag")ks.forEach(k=>{g[k]=rotaOrdem(g[k],ROT)});
+ const item=x=>{const k=(x.f.proc||"").trim(),fe=feito(x),hn=(x.hist||[]).length,re=!fe&&hn>0,np=fe?pends(x).p.length:0,gp=gFind(x),rt=ROT[x.id];return `<div class="rel${x.id===S.id?" cur":""}"><div><strong>${rt?rt.n+". ":""}Processo ${esc(k)||"sem número"}</strong> <span class="st ${x.c.fechado==="Sim"?"rv":fe?"ok2":re?"rv":"ag"}">${x.c.fechado==="Sim"?"Imóvel fechado":fe?(hn?"Vistoriado ("+(hn+1)+"ª)":"Vistoriado"):re?"A revistoriar":"A vistoriar"}</span>${n[k]>1?' <span class="dup">número repetido</span>':""}<div class="lbl">${x.f.data?"Vistoria "+fd(x.f.data)+" - ":""}${esc(addr(x)||"Sem endereço")}${x.f.lote?" - "+esc(x.f.lote):""} - ${x.p.length} foto(s)${np?` - <span class="dup">${np} pendência(s)</span>`:""}${rt&&rt.d!=null?` - ${fmtDist(rt.d)} da parada anterior`:""}${rt&&rt.sc?" - sem coordenada (final da rota)":""}</div></div><div class="bar"><button class="btn ghost sm" data-open="${x.id}">Abrir</button>${fe?`<button class="btn sm" data-pdf="${x.id}">PDF</button>`:""}${gp?`<a class="btn ghost sm" href="${gLink(gp)}" target="_blank" rel="noopener">Mapa</a>`:""}${fe?`<button class="btn ghost sm" data-rev="${x.id}">Revistoriar</button>`:""}<button class="btn ghost sm" data-del="${x.id}">Excluir</button></div></div>`};
  $("lista").innerHTML=ks.length?ks.map(k=>`<h3 class="grp">${k==="__sem"?"Sem analista":esc(nomes[k])} <span class="lbl">(${g[k].length})</span></h3>`+g[k].map(item).join("")).join(""):'<p class="empty">'+(VIEW==="ok"?"Nenhum relatório salvo encontrado.":"Nenhum processo a vistoriar encontrado. Use “Cadastrar processo” para incluir.")+'</p>'}
 async function openRep(id){await flush();const x=(await dbAll()).find(r=>r.id===id);if(x){S=norm(x);cur();paint();list();tela("form")}}
 async function newRep(){await flush();S=blank();paint();list();tela("form");$("proc").focus()}
 async function delRep(id){if(!confirm("Excluir este relatório e suas fotos? Não dá para desfazer."))return;try{await dbDel(id)}catch(e){}
  if(id===S.id){dirty=false;S=blank();paint();if(emForm())tela("lista")}list()}
 const $=id=>document.getElementById(id);
+const mb=n=>n>=1073741824?(n/1073741824).toFixed(2).replace(".",",")+" GB":(n/1048576).toFixed(n>=104857600?0:1).replace(".",",")+" MB";
+async function storUI(){const tx=$("sttx"),bar=$("stpb"),fl=$("stfill");if(!tx)return;
+ let rel=0;try{if(DB)(await dbAll()).forEach(x=>{rel+=JSON.stringify(x).length})}catch(e){}
+ let us=null,qt=null;try{if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();us=e.usage;qt=e.quota}}catch(e){}
+ if(us!=null&&qt){const pc=Math.min(100,us/qt*100);fl.style.width=Math.max(pc,.5)+"%";bar.hidden=false;bar.classList.toggle("warn",pc>=70&&pc<90);bar.classList.toggle("crit",pc>=90);bar.setAttribute("aria-valuenow",Math.round(pc));
+  tx.textContent="Armazenamento: "+mb(us)+" de "+mb(qt)+" ("+(pc<1?pc.toFixed(1).replace(".",","):Math.round(pc))+"% usado). Relatórios: "+mb(rel)+"."}
+ else{bar.hidden=true;tx.textContent="Armazenamento: os relatórios ocupam "+mb(rel)+". Este navegador não informa o limite."}}
 function tela(t){$("vlista").hidden=t!=="lista";$("vform").hidden=t!=="form";$("homeb").hidden=t!=="lista";$("listab").hidden=t!=="form";$("cabn").style.display=t==="lista"?"none":"";scrollTo(0,0)}
 const emForm=()=>!$("vform").hidden;
 function save(){pend();dirty=true;clearTimeout(timer);timer=setTimeout(flush,400)}
@@ -484,7 +529,10 @@ $("salvar").onclick=async()=>{dirty=true;await flush();const m=$("msg");if(!m.te
 function pv(on){document.body.classList.toggle("prev",on);$("pvbar").hidden=!on;scrollTo(0,0)}
 $("prev").onclick=()=>pv(true);$("pvx").onclick=()=>pv(false);$("pvp").onclick=()=>$("print").click();
 function cfgPaint(){gUI();$("cfgl").innerHTML=CFG.lotes.map((z,i)=>`<div class="row"><strong>${esc(z.n)}</strong><div class="bar" style="align-items:center"><div class="unit"><input type="number" inputmode="decimal" step="0.01" min="0" data-cl="${i}" value="${esc(z.m)}" aria-label="Calçada mínima de ${esc(z.n)}" style="width:100px"><span>m</span></div><button class="btn ghost sm" data-cr="${i}">Remover</button></div></div>`).join("");
- $("cfaixa").value=CFG.faixa;$("carv").value=CFG.arv}
+ $("cfaixa").value=CFG.faixa;$("carv").value=CFG.arv;
+ $("mpst").textContent="Mapa principal: "+mapaNome()+". Os botões “Mapa” e os links de localização abrem o ponto no "+mapaNome()+".";
+ $("mpalt").textContent="Alternar para "+(CFG.mapa==="osm"?"Google Maps":"OpenStreetMap")}
+$("mpalt").onclick=()=>{CFG.mapa=CFG.mapa==="osm"?"google":"osm";cfgSave();cfgPaint();gForm();list()};
 function cfgApply(){cfgSave();lotPaint();pend();list()}
 $("cfgb").onclick=()=>{const h=$("cfg").hidden;$("cfg").hidden=!h;if(h){cfgPaint();$("cfg").scrollIntoView()}};
 $("cfgx").onclick=()=>{$("cfg").hidden=true;scrollTo(0,0)};
@@ -498,7 +546,7 @@ async function escolher(t){await flush();TIPO=t;
  S=norm(a.find(x=>x.id===c)||a[0]||blank());S.tipo=t;$("tipoL").textContent="Tipo de processo: "+TIPOS[t];
  $("home").hidden=true;$("app").hidden=false;paint();VIEW="ag";tela("lista");list()}
 document.querySelectorAll(".tipo").forEach(b=>b.onclick=()=>escolher(b.dataset.t));
-const voltar=async()=>{await flush();document.body.classList.remove("prev","pdfd");$("dpbar").hidden=true;$("pdfarea").innerHTML="";$("pvbar").hidden=true;$("app").hidden=true;$("home").hidden=false;scrollTo(0,0)};
+const voltar=async()=>{await flush();document.body.classList.remove("prev","pdfd");$("dpbar").hidden=true;$("pdfarea").innerHTML="";$("pvbar").hidden=true;$("app").hidden=true;$("home").hidden=false;scrollTo(0,0);storUI()};
 $("homeb").onclick=voltar;$("homeb2").onclick=voltar;
 $("listab").onclick=async()=>{await flush();tela("lista");list()};
 document.querySelectorAll("[data-vw]").forEach(b=>b.onclick=()=>{VIEW=b.dataset.vw;list()});
@@ -528,7 +576,7 @@ async function doDia(){
  if(!DB){dmsg("Este navegador não permite acessar os relatórios salvos.");return null}
  const an=$("fan").value,ky=x=>(x.f.analista||"").trim().toLowerCase();
  let a=[];try{a=await dbAll()}catch(e){dmsg("Não foi possível ler os relatórios.");return null}
- a=a.filter(x=>(x.tipo||"habite")===TIPO&&feito(x)===(VIEW==="ok")&&x.f.data===d&&(!an||(an==="__sem"?!ky(x):ky(x)===an))).sort((x,y)=>(x.t||0)-(y.t||0));
+ a=a.filter(x=>(x.tipo||"habite")===TIPO&&feito(x)===(VIEW==="ok")&&x.f.data===d&&(!an||(an==="__sem"?!ky(x):ky(x)===an))).sort((x,y)=>(x.t||0)-(y.t||0));a=ordemPorAnalista(a);
  if(!a.length){dmsg("Nenhum processo "+(VIEW==="ok"?"vistoriado":"a vistoriar")+" em "+fd(d)+(an?" para o analista filtrado":"")+".");return null}
  return{d,a,an}}
 const kvi=(l,v)=>v?`<div><span class="lbl">${l}</span>${esc(v)}</div>`:"";
@@ -655,7 +703,7 @@ build();
  if(DB){try{const o=localStorage.getItem("relfoto");if(o){await dbPut(Object.assign(blank(),JSON.parse(o)));localStorage.removeItem("relfoto")}}catch(e){}
 }
  if(DB){try{GEO=(await gTx("readonly",s=>s.get("geo")))||null;gBuild()}catch(e){}}
- paint();list()})();
+ paint();list();storUI()})();
 </script>
 <script src="drive-config.js"></script>
 <script src="shared-config.js"></script>

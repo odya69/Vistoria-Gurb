@@ -75,9 +75,9 @@ window.syncDel=id=>{if(!ok||mute)return;const p=pend();p[id]="del";p[id+"#t"]=Da
 
 function homeUI(){
   const h=$("home");if(!h||$("shbox"))return;
-  const b=document.createElement("div");b.id="shbox";b.className="gbox noprint";
-  b.innerHTML='<h2>Relatórios compartilhados</h2><p class="lbl" style="margin:0 0 8px">Os relatórios são salvos no servidor e aparecem para todos que abrirem o app.</p><p class="lbl" id="shst" role="status">Conectando...</p><div class="bar"><button class="btn ghost sm" id="shnow" type="button">Sincronizar agora</button></div>';
-  const g=h.querySelector(".gbox");g?h.insertBefore(b,g):h.appendChild(b);
+  const b=document.createElement("div");b.id="shbox";b.className="mini noprint";
+  b.innerHTML='<span class="lbl"><strong>Compartilhado:</strong> <span id="shst" role="status">Conectando...</span></span><button class="btn ghost sm" id="shnow" type="button">Sincronizar</button>';
+  const st=$("stbox");st?h.insertBefore(b,st):h.appendChild(b);
   $("shnow").onclick=()=>sync(true);
 }
 
