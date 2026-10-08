@@ -143,6 +143,13 @@ body.prev .gear{display:none}
 .stbar i{display:block;height:100%;width:0;background:var(--acc);transition:width .3s}
 .stbar.warn i{background:#b45309}.stbar.crit i{background:var(--nao)}
 #cfg .gbox h2{margin-top:-14px;padding-right:16px}
+.acc{margin-top:14px}
+.acch{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:52px;padding:12px 14px;border:2px solid var(--acc);background:var(--acc);color:#fff;border-radius:6px;font:700 1.05rem "Trebuchet MS",Verdana,system-ui,sans-serif;cursor:pointer;text-align:left}
+.acch .n{font-weight:400;font-size:.95rem}
+.acch .chev{font-size:1.3rem;line-height:1;transition:transform .2s}
+.acch[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.acch.sec{background:var(--bg);color:var(--acc)}
+.accb{padding-top:10px}
 .tabs{display:flex;gap:8px;margin:0 0 14px}
 .tabs button{flex:1;min-height:48px;padding:10px 8px;border:2px solid var(--acc);background:var(--bg);color:var(--acc);border-radius:6px;font:700 1rem "Trebuchet MS",Verdana,system-ui,sans-serif;cursor:pointer}
 .tabs button[aria-pressed="true"]{background:var(--acc);color:#fff}
@@ -249,14 +256,31 @@ body.pdfd .photos{grid-template-columns:repeat(2,1fr)}
 
 
  <section class="noprint">
-  <h2 id="vtit">A vistoriar</h2>
-  <div class="tabs" role="group" aria-label="Telas"><button type="button" data-vw="ag" aria-pressed="true">A vistoriar <span class="n" id="nag"></span></button><button type="button" data-vw="ok" aria-pressed="false">Relatórios salvos <span class="n" id="nok"></span></button></div>
+  <h2>Processos</h2>
+  <div class="acc" style="margin-top:0">
+   <button type="button" class="acch sec" id="acch_fl" data-acc="fl" aria-expanded="false" aria-controls="accb_fl"><span>Filtros e ações<span class="n" id="flsum" style="display:block"></span></span><span class="chev" aria-hidden="true">&#9662;</span></button>
+   <div class="accb" id="accb_fl" hidden>
   <div class="bar"><button class="btn" id="cadb">Cadastrar processo</button><button class="btn ghost" id="novo">Novo relatório</button><select id="fan" aria-label="Filtrar por analista" style="width:auto;min-width:190px"></select><input id="busca" placeholder="Buscar por nº do processo ou endereço" aria-label="Buscar relatório" style="flex:1;min-width:200px"></div>
   <div class="bar" style="margin-top:8px;align-items:center"><input id="fdt" type="date" aria-label="Filtrar por data da vistoria" style="width:auto"><button class="btn ghost sm" id="fhoje">Hoje</button><button class="btn ghost sm" id="fall">Todas as datas</button></div>
-  <div class="bar" style="margin-top:8px;align-items:center"><button class="btn ghost sm" id="rotab">Copiar rota (texto p/ WhatsApp)</button></div>
-  <p class="lbl" style="margin:6px 0 0">Use o filtro de data acima. O botão copia a rota dos processos desta tela nessa data (e do analista filtrado, se houver). Para gerar o PDF, use o botão PDF de cada processo em “Relatórios salvos”.</p>
-  <p class="empty" id="dmsgd" role="status"></p>
-  <div id="lista"></div>
+   </div>
+  </div>
+  <div class="acc">
+   <button type="button" class="acch" id="acch_ag" data-acc="ag" aria-expanded="true" aria-controls="accb_ag"><span>A vistoriar <span class="n" id="nag"></span></span><span class="chev" aria-hidden="true">&#9662;</span></button>
+   <div class="accb" id="accb_ag">
+    <div class="bar" style="align-items:center"><button class="btn ghost sm" id="agrb" type="button">Ver por analista</button><button class="btn ghost sm" id="rotab">Copiar rota (texto p/ WhatsApp)</button></div>
+    <p class="lbl" style="margin:6px 0 0">Para copiar a rota, escolha a data em “Filtros e ações”. O botão copia os processos a vistoriar nessa data, numa ordem só (e só do analista filtrado, se você escolher um).</p>
+    <p class="empty" id="dmsgd" role="status"></p>
+    <div id="lista"></div>
+   </div>
+  </div>
+  <div class="acc">
+   <button type="button" class="acch sec" id="acch_ok" data-acc="ok" aria-expanded="false" aria-controls="accb_ok"><span>Relatórios salvos <span class="n" id="nok"></span></span><span class="chev" aria-hidden="true">&#9662;</span></button>
+   <div class="accb" id="accb_ok" hidden>
+    <div class="bar" style="align-items:center"><button class="btn ghost sm" id="agrb2" type="button">Ver lista única</button></div>
+    <p class="lbl" style="margin:6px 0 0">Para gerar o PDF de um processo, use o botão PDF dele.</p>
+    <div id="lista2"></div>
+   </div>
+  </div>
  </section>
  </div>
 
@@ -354,7 +378,10 @@ body.pdfd .photos{grid-template-columns:repeat(2,1fr)}
 <script>
 const CHECKS=[["agua","Água (ligação de abastecimento)"],["energia","Energia elétrica"],["equip","Equipamentos (chuveiro, pia, torneira, vaso sanitário etc.)"],["muro","Muro ou fechamento"],["calcada","Calçada construída"]];
 const MEDS=[["rfrente","Recuo frontal"],["resq","Recuo lateral esquerdo"],["rdir","Recuo lateral direito"],["rfundos","Recuo de fundos"],["tcalcada","Tamanho da calçada"],["faixa","Faixa livre"]];
-let TIPO="",VIEW="ag";
+let TIPO="";const AGR={ag:false,ok:true};
+let OPEN={ag:true,ok:false,fl:false};try{const o=JSON.parse(localStorage.getItem("relfoto_acc")||"null");if(o)OPEN=Object.assign(OPEN,o)}catch(e){}
+const accSave=()=>{try{localStorage.setItem("relfoto_acc",JSON.stringify(OPEN))}catch(e){}};
+function accPaint(){["ag","ok","fl"].forEach(k=>{document.getElementById("accb_"+k).hidden=!OPEN[k];document.getElementById("acch_"+k).setAttribute("aria-expanded",String(!!OPEN[k]))})}
 const blank=()=>({id:"r"+Date.now().toString(36),f:{},c:{},m:{},p:[],t:Date.now(),tipo:TIPO});
 let S=blank(),DB=null,timer=null,dirty=false;
 const FIXOS=["Maisa Fugita","Francisco Arlon","Carol Pinheiro"];
@@ -400,7 +427,7 @@ async function revistoriar(id){await flush();const o=(await dbAll()).find(x=>x.i
  const iso=await pedirData();if(iso===null)return;
  arquivar(o);o.f.data=iso;o.t=Date.now();
  try{await dbPut(o)}catch(e){alert("Não foi possível salvar (espaço cheio?).");return}
- if(S.id===id){S=o;paint()}if(emForm()){VIEW="ag";tela("lista")}list()}
+ if(S.id===id){S=o;paint()}if(emForm()){OPEN.ag=true;accSave();tela("lista")}list()}
 let GEO=null,GIDX={};
 const gTx=(mode,fn)=>new Promise((ok,no)=>{const t=DB.transaction("g",mode),rq=fn(t.objectStore("g"));t.oncomplete=()=>ok(rq&&rq.result);t.onerror=()=>no(t.error)});
 const gn=v=>String(v==null?"":v).toLowerCase().replace(/[^a-z0-9]/g,"");
@@ -436,6 +463,7 @@ function vizinho(arr,info,from,off){
  sem.forEach((x,i)=>{info[x.id]={n:off+ord.length+i+1,d:null,sc:true}});
  return{lista:ord.concat(sem),ultimo:ord.length?gFind(ord[ord.length-1]):from}}
 function rotaOrdem(arr,info){
+ arr=[...arr].sort((x,y)=>String(x.f.proc||"").localeCompare(String(y.f.proc||""),"pt",{numeric:true})||String(x.id).localeCompare(String(y.id)));
  const por={};arr.forEach(x=>{const d=x.f.data||"";(por[d]=por[d]||[]).push(x)});
  let out=[];
  Object.keys(por).sort((p,q)=>(p||"9").localeCompare(q||"9")).forEach(d=>{
@@ -443,9 +471,6 @@ function rotaOrdem(arr,info){
   let from=null,off=0;
   Object.keys(rk).map(Number).sort((a,b)=>a-b).forEach(r=>{const v=vizinho(rk[r],info,from,off);out=out.concat(v.lista);off+=v.lista.length;from=v.ultimo})});
  return out}
-function ordemPorAnalista(arr){
- const kk=x=>(x.f.analista||"").trim().toLowerCase(),g={};arr.forEach(x=>{(g[kk(x)]=g[kk(x)]||[]).push(x)});
- let out=[];Object.keys(g).sort((a,b)=>a===""?1:b===""?-1:a.localeCompare(b)).forEach(k=>{out=out.concat(rotaOrdem(g[k],{}))});return out}
 function centro(g){if(!g||!g.coordinates)return null;const c=[];const w=a=>{if(typeof a[0]==="number")c.push(a);else a.forEach(w)};w(g.coordinates);if(!c.length)return null;
  if(g.type==="Point"||g.type==="MultiPoint")return c[0];return[c.reduce((t,z)=>t+z[0],0)/c.length,c.reduce((t,z)=>t+z[1],0)/c.length]}
 const gKeys=()=>[...new Set(GEO.pts.slice(0,100).flatMap(q=>Object.keys(q.p)))];
@@ -482,16 +507,18 @@ async function list(){let a=[];try{a=DB?await dbAll():[]}catch(e){}
  a.sort((x,y)=>(x.f.data||"9").localeCompare(y.f.data||"9")||y.t-x.t);const q=$("busca").value.trim().toLowerCase(),n={};
  a.forEach(x=>{const k=(x.f.proc||"").trim();if(k)n[k]=(n[k]||0)+1});
  let v=a.filter(x=>((x.f.proc||"")+" "+(x.f.insc||"")+" "+addr(x)).toLowerCase().includes(q)&&(!sel.value||(sel.value==="__sem"?!key(x):key(x)===sel.value))&&(!$("fdt").value||x.f.data===$("fdt").value));
+ const fs=[];if($("fdt").value)fs.push("data "+fd($("fdt").value));if(sel.value)fs.push(sel.options[sel.selectedIndex].text);if(q)fs.push("busca “"+$("busca").value.trim()+"”");
+ $("flsum").textContent=fs.length?"Ativos: "+fs.join(" · "):"Nenhum filtro ativo";
  const vAg=v.filter(x=>!feito(x)),vOk=v.filter(feito);
  $("nag").textContent="("+vAg.length+")";$("nok").textContent="("+vOk.length+")";
- document.querySelectorAll("[data-vw]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.vw===VIEW));
- $("vtit").textContent=VIEW==="ok"?"Relatórios salvos":"A vistoriar";
- v=VIEW==="ok"?vOk:vAg;
- const g={};v.forEach(x=>{const k=key(x)||"__sem";(g[k]=g[k]||[]).push(x)});
- const ks=Object.keys(g).sort((x,y)=>x==="__sem"?1:y==="__sem"?-1:x.localeCompare(y));
- const ROT={};if(VIEW==="ag")ks.forEach(k=>{g[k]=rotaOrdem(g[k],ROT)});
- const item=x=>{const k=(x.f.proc||"").trim(),fe=feito(x),hn=(x.hist||[]).length,re=!fe&&hn>0,np=fe?pends(x).p.length:0,gp=gFind(x),rt=ROT[x.id];return `<div class="rel${x.id===S.id?" cur":""}"><div><strong>${rt?rt.n+". ":""}Processo ${esc(k)||"sem número"}</strong> <span class="st ${x.c.fechado==="Sim"?"rv":fe?"ok2":re?"rv":"ag"}">${x.c.fechado==="Sim"?"Imóvel fechado":fe?(hn?"Vistoriado ("+(hn+1)+"ª)":"Vistoriado"):re?"A revistoriar":"A vistoriar"}</span>${n[k]>1?' <span class="dup">número repetido</span>':""}<div class="lbl">${x.f.data?"Vistoria "+fd(x.f.data)+" - ":""}${esc(addr(x)||"Sem endereço")}${x.f.lote?" - "+esc(x.f.lote):""} - ${x.p.length} foto(s)${np?` - <span class="dup">${np} pendência(s)</span>`:""}${rt&&rt.d!=null?` - ${fmtDist(rt.d)} da parada anterior`:""}${rt&&rt.sc?" - sem coordenada (final da rota)":""}</div></div><div class="bar"><button class="btn ghost sm" data-open="${x.id}">Abrir</button>${fe?`<button class="btn sm" data-pdf="${x.id}">PDF</button>`:""}${gp?`<a class="btn ghost sm" href="${gLink(gp)}" target="_blank" rel="noopener">Mapa</a>`:""}${fe?`<button class="btn ghost sm" data-rev="${x.id}">Revistoriar</button>`:""}<button class="btn ghost sm" data-del="${x.id}">Excluir</button></div></div>`};
- $("lista").innerHTML=ks.length?ks.map(k=>`<h3 class="grp">${k==="__sem"?"Sem analista":esc(nomes[k])} <span class="lbl">(${g[k].length})</span></h3>`+g[k].map(item).join("")).join(""):'<p class="empty">'+(VIEW==="ok"?"Nenhum relatório salvo encontrado.":"Nenhum processo a vistoriar encontrado. Use “Cadastrar processo” para incluir.")+'</p>'}
+ const pinta=(view,arr,box)=>{
+  const agr=AGR[view];$(view==="ag"?"agrb":"agrb2").textContent=agr?"Ver lista única":"Ver por analista";
+  const g={};arr.forEach(x=>{const k=agr?(key(x)||"__sem"):"__todos";(g[k]=g[k]||[]).push(x)});
+  const ks=Object.keys(g).sort((x,y)=>x==="__sem"?1:y==="__sem"?-1:x.localeCompare(y));
+  const ROT={};if(view==="ag")ks.forEach(k=>{g[k]=rotaOrdem(g[k],ROT)});
+  const item=x=>{const k=(x.f.proc||"").trim(),fe=feito(x),hn=(x.hist||[]).length,re=!fe&&hn>0,np=fe?pends(x).p.length:0,gp=gFind(x),rt=ROT[x.id];return `<div class="rel${x.id===S.id?" cur":""}"><div><strong>${rt?rt.n+". ":""}Processo ${esc(k)||"sem número"}</strong> <span class="st ${x.c.fechado==="Sim"?"rv":fe?"ok2":re?"rv":"ag"}">${x.c.fechado==="Sim"?"Imóvel fechado":fe?(hn?"Vistoriado ("+(hn+1)+"ª)":"Vistoriado"):re?"A revistoriar":"A vistoriar"}</span>${n[k]>1?' <span class="dup">número repetido</span>':""}<div class="lbl">${x.f.data?"Vistoria "+fd(x.f.data)+" - ":""}${esc(addr(x)||"Sem endereço")}${x.f.lote?" - "+esc(x.f.lote):""}${!agr&&nm(x)?" - Analista: "+esc(nm(x)):""} - ${x.p.length} foto(s)${np?` - <span class="dup">${np} pendência(s)</span>`:""}${rt&&rt.d!=null?` - ${fmtDist(rt.d)} da parada anterior`:""}${rt&&rt.sc?" - sem coordenada (final da rota)":""}</div></div><div class="bar"><button class="btn ghost sm" data-open="${x.id}">Abrir</button>${fe?`<button class="btn sm" data-pdf="${x.id}">PDF</button>`:""}${gp?`<a class="btn ghost sm" href="${gLink(gp)}" target="_blank" rel="noopener">Mapa</a>`:""}${fe?`<button class="btn ghost sm" data-rev="${x.id}">Revistoriar</button>`:""}<button class="btn ghost sm" data-del="${x.id}">Excluir</button></div></div>`};
+  $(box).innerHTML=ks.length?ks.map(k=>(k==="__todos"?"":`<h3 class="grp">${k==="__sem"?"Sem analista":esc(nomes[k])} <span class="lbl">(${g[k].length})</span></h3>`)+g[k].map(item).join("")).join(""):'<p class="empty">'+(view==="ok"?"Nenhum relatório salvo encontrado.":"Nenhum processo a vistoriar encontrado. Use “Cadastrar processo” para incluir.")+'</p>'};
+ pinta("ag",vAg,"lista");pinta("ok",vOk,"lista2");accPaint()}
 async function openRep(id){await flush();const x=(await dbAll()).find(r=>r.id===id);if(x){S=norm(x);cur();paint();list();tela("form")}}
 async function newRep(){await flush();S=blank();paint();list();tela("form");$("proc").focus()}
 async function delRep(id){if(!confirm("Excluir este relatório e suas fotos? Não dá para desfazer."))return;try{await dbDel(id)}catch(e){}
@@ -568,12 +595,12 @@ $("cfaixa").oninput=e=>{CFG.faixa=e.target.value;cfgApply()};$("carv").oninput=e
 async function escolher(t){await flush();TIPO=t;
  const a=(DB?await dbAll():[]).filter(x=>(x.tipo||"habite")===t).sort((x,y)=>y.t-x.t);let c=null;try{c=localStorage.getItem("relfoto_cur")}catch(e){}
  S=norm(a.find(x=>x.id===c)||a[0]||blank());S.tipo=t;$("tipoL").textContent="Tipo de processo: "+TIPOS[t];
- $("home").hidden=true;$("app").hidden=false;paint();VIEW="ag";tela("lista");list()}
+ $("home").hidden=true;$("app").hidden=false;paint();OPEN.ag=true;accSave();tela("lista");list()}
 document.querySelectorAll(".tipo").forEach(b=>b.onclick=()=>escolher(b.dataset.t));
 const voltar=async()=>{await flush();document.body.classList.remove("prev","pdfd");$("dpbar").hidden=true;$("pdfarea").innerHTML="";$("pvbar").hidden=true;$("app").hidden=true;$("home").hidden=false;scrollTo(0,0);storUI()};
 $("homeb").onclick=voltar;$("homeb2").onclick=voltar;
 $("listab").onclick=async()=>{await flush();tela("lista");list()};
-document.querySelectorAll("[data-vw]").forEach(b=>b.onclick=()=>{VIEW=b.dataset.vw;list()});
+document.querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{OPEN[b.dataset.acc]=!OPEN[b.dataset.acc];accSave();accPaint()});
 $("home").prepend(document.querySelector(".logos").cloneNode(true));
 const CAMP=["proc","insc","data","ana","lot","rua","numero","quadra","nlote","bairro"];
 $("cadb").onclick=()=>{$("dl_ana").innerHTML=FIXOS.map(n=>`<option value="${esc(n)}">`).join("");$("dl_lot").innerHTML=CFG.lotes.map(z=>`<option value="${esc(z.n)}">`).join("");$("c_msg").textContent="";$("cad").hidden=false;$("cad").scrollIntoView()};
@@ -588,7 +615,7 @@ $("c_add").onclick=async()=>{const v={},m=$("c_msg");CAMP.forEach(k=>v[k]=$("c_"
  try{await dbPut(o)}catch(e){m.textContent="Não foi possível salvar o cadastro (espaço cheio?).";return}
  ["proc","insc","rua","numero","quadra","nlote"].forEach(k=>$("c_"+k).value="");$("c_proc").focus();
  m.textContent="Processo "+v.proc+" cadastrado. Você pode cadastrar o próximo.";list()};
-$("fdt").onchange=list;$("fall").onclick=()=>{$("fdt").value="";list()};
+$("fdt").onchange=list;$("agrb").onclick=()=>{AGR.ag=!AGR.ag;list()};$("agrb2").onclick=()=>{AGR.ok=!AGR.ok;list()};$("fall").onclick=()=>{$("fdt").value="";list()};
 $("fhoje").onclick=()=>{const d=new Date();$("fdt").value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");list()};
 
 /* ===== PDF de todos os relatórios de uma data + rota em texto ===== */
@@ -596,12 +623,12 @@ const dmsg=t=>{$("dmsgd").textContent=t||""};
 async function doDia(){
  await flush();dmsg("");
  const d=$("fdt").value;
- if(!d){dmsg("Escolha a data da vistoria no filtro de data (ou toque em Hoje).");return null}
+ if(!d){OPEN.fl=true;accSave();accPaint();dmsg("Escolha a data da vistoria no filtro de data (ou toque em Hoje).");return null}
  if(!DB){dmsg("Este navegador não permite acessar os relatórios salvos.");return null}
  const an=$("fan").value,ky=x=>(x.f.analista||"").trim().toLowerCase();
  let a=[];try{a=await dbAll()}catch(e){dmsg("Não foi possível ler os relatórios.");return null}
- a=a.filter(x=>(x.tipo||"habite")===TIPO&&feito(x)===(VIEW==="ok")&&x.f.data===d&&(!an||(an==="__sem"?!ky(x):ky(x)===an))).sort((x,y)=>(x.t||0)-(y.t||0));a=ordemPorAnalista(a);
- if(!a.length){dmsg("Nenhum processo "+(VIEW==="ok"?"vistoriado":"a vistoriar")+" em "+fd(d)+(an?" para o analista filtrado":"")+".");return null}
+ a=a.filter(x=>(x.tipo||"habite")===TIPO&&!feito(x)&&x.f.data===d&&(!an||(an==="__sem"?!ky(x):ky(x)===an))).sort((x,y)=>(x.t||0)-(y.t||0));a=rotaOrdem(a,{});
+ if(!a.length){dmsg("Nenhum processo a vistoriar em "+fd(d)+(an?" para o analista filtrado":"")+".");return null}
  return{d,a,an}}
 const kvi=(l,v)=>v?`<div><span class="lbl">${l}</span>${esc(v)}</div>`:"";
 function relHTML(x,logos){
