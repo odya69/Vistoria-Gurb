@@ -8,5 +8,6 @@
    ============================================================ */
 window.SHARED_CONFIG = {
   URL: "https://gayokdfujbypjkjajqrf.supabase.co",
-  KEY: "sb_publishable_NDsc7nNGSKAs0Oa0XWXh9w_Ap5BzgFw"
+  KEY: "sb_publishable_NDsc7nNGSKAs0Oa0XWXh9w_Ap5BzgFw",
+  LIMITE_MB: 500   // limite do banco no seu plano (grátis = 500 MB); usado na barra de armazenamento
 };

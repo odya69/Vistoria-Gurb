@@ -1,4 +1,4 @@
-const CACHE = "vistorias-v7";
+const CACHE = "vistorias-v8";
 const ARQUIVOS = [
   "./",
   "./index.html",

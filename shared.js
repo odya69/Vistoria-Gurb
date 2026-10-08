@@ -53,6 +53,26 @@ async function pull(){
   return mudou;
 }
 
+/* ---------- tamanho do banco compartilhado ---------- */
+let lastTam=0;
+async function tamanho(force){
+  const bx=$("dbbox");if(!ok||!bx)return;bx.hidden=false;
+  if(!force&&Date.now()-lastTam<60000)return;
+  const lim=(C.LIMITE_MB||500)*1048576;
+  try{
+    const r=await rpc("rel_tamanho",{p:pw});lastTam=Date.now();
+    const pc=barPaint("2",r.banco,lim);
+    $("sttx2").textContent=mb(r.banco)+" de "+mb(lim)+(pc!==null?" ("+pc+"% usado)":"");
+    $("sttx2").style.color="";
+    $("stsub2").textContent="Espaço do banco online, usado por todos os aparelhos juntos. O limite de "+mb(lim)+" é o do plano grátis (se o seu plano for outro, ajuste LIMITE_MB em shared-config.js). Só os relatórios: "+mb(r.relatorios)+" ("+r.qtd+" relatório"+(Number(r.qtd)===1?"":"s")+").";
+  }catch(e){
+    const falta=/rel_tamanho|schema cache|Could not find/i.test(String(e&&e.message));
+    $("sttx2").textContent=falta?"tamanho ainda não disponível":"não foi possível consultar agora";
+    $("sttx2").style.color="#a63d2f";
+    $("stpb2").hidden=true;
+    $("stsub2").textContent=falta?"Falta atualizar o Supabase: rode de novo o arquivo supabase-setup.sql no SQL Editor para liberar esta consulta.":"Verifique a conexão com a internet. O tamanho é consultado de novo a cada sincronização."}
+}
+
 let espera=0;
 async function sync(manual){
   if(!ok||busy)return;
@@ -62,7 +82,7 @@ async function sync(manual){
     if(!ls.g(K.init)){const p=pend();(await dbAll()).forEach(x=>{if(!p[x.id])p[x.id]="put"});setPend(p);ls.s(K.init,"1")}
     await pushAll();
     const n=await pull();
-    lastOk=Date.now();online=true;
+    lastOk=Date.now();online=true;tamanho(manual===true);
     status("Compartilhado e sincronizado às "+hora()+(Object.keys(pend()).length?"":""));
     if(n&&typeof list==="function")await list();
   }catch(e){
@@ -79,6 +99,7 @@ function homeUI(){
   b.innerHTML='<span class="lbl"><strong>Compartilhado:</strong> <span id="shst" role="status">Conectando...</span></span><button class="btn ghost sm" id="shnow" type="button">Sincronizar</button>';
   const st=$("stbox");st?h.insertBefore(b,st):h.appendChild(b);
   $("shnow").onclick=()=>sync(true);
+  const db=$("dbbox");if(db)db.hidden=false;
 }
 
 let started=false;

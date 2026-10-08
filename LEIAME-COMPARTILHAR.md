@@ -15,6 +15,6 @@
 - Relatórios que já existiam no aparelho sobem ao servidor no primeiro acesso.
 
 ## Limites
-- Plano grátis do Supabase: 500 MB de banco. Como as fotos ficam dentro dos relatórios, acompanhe o uso.
+- Plano grátis do Supabase: 500 MB de banco. Como as fotos ficam dentro dos relatórios, acompanhe o uso: a tela inicial do app mostra o tamanho do banco (precisa da função `rel_tamanho`, que está no `supabase-setup.sql`; se atualizou o app depois de criar o banco, rode o arquivo SQL de novo). Se o seu plano tiver outro limite, altere `LIMITE_MB` em `shared-config.js`.
 - Fica de fora da sincronização: configurações (calçada mínima, loteamentos) e o arquivo GeoJSON.
 - Sem senha, qualquer pessoa que tenha o endereço do app (e abra o código) consegue ler e alterar os relatórios. Compartilhe o link só com quem deve ter acesso.

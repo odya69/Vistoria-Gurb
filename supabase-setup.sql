@@ -68,3 +68,16 @@ revoke execute on function public.rel_check(text), public.rel_list(text,bigint),
   public.rel_put(text,text,text,jsonb,bigint), public.rel_del(text,text,bigint) from public;
 grant execute on function public.rel_check(text), public.rel_list(text,bigint),
   public.rel_put(text,text,text,jsonb,bigint), public.rel_del(text,text,bigint) to anon, authenticated;
+
+-- Tamanho do banco (mostrado na tela inicial do app). Pode rodar de novo sem problema.
+create or replace function public.rel_tamanho(p text) returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  if not public._rel_ok(p) then raise exception 'senha_invalida'; end if;
+  return jsonb_build_object(
+    'banco',      pg_database_size(current_database()),
+    'relatorios', pg_total_relation_size('public.relatorios'),
+    'qtd',        (select count(*) from public.relatorios where not apagado));
+end $$;
+revoke execute on function public.rel_tamanho(text) from public;
+grant execute on function public.rel_tamanho(text) to anon, authenticated;

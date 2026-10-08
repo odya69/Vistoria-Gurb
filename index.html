@@ -136,7 +136,9 @@ body.prev .gear{display:none}
 .mini{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:center;margin-top:22px;padding:8px 12px;border:1px solid var(--line);border-radius:6px;text-align:center}
 .mini .lbl{margin:0}
 .mini .btn{min-height:36px;padding:5px 12px}
-#stbox{display:block;margin-top:10px}
+#stbox{display:block;margin-top:10px;text-align:left}
+.stitem{margin-top:12px}.stitem:first-child{margin-top:0}
+#stbox .stsub{margin-top:4px;font-size:.8rem}
 .stbar{height:10px;background:#e6ebf6;border-radius:5px;overflow:hidden;margin-top:6px}
 .stbar i{display:block;height:100%;width:0;background:var(--acc);transition:width .3s}
 .stbar.warn i{background:#b45309}.stbar.crit i{background:var(--nao)}
@@ -173,7 +175,10 @@ body.pdfd .photos{grid-template-columns:repeat(2,1fr)}
  <div class="tipos"><button class="tipo" data-t="habite">Habite-se</button><button class="tipo off" data-t="regul" disabled aria-disabled="true">Auto de regularização<small>Em breve</small></button><button class="tipo off" data-t="acess" disabled aria-disabled="true">Acessibilidade<small>Em breve</small></button></div>
  <div class="bar" style="justify-content:center;margin-top:26px"><button class="btn ghost sm" id="bexp2">Exportar relatórios</button><label class="btn ghost sm" style="cursor:pointer">Importar relatórios<input id="bimp2" type="file" accept=".json,application/json" hidden></label></div>
  <p class="empty" id="bmsg2" role="status" style="text-align:center"></p>
- <div id="stbox" class="mini noprint"><div style="width:100%"><div class="lbl" id="sttx">Armazenamento: calculando...</div><div class="stbar" id="stpb" role="progressbar" aria-label="Armazenamento usado" aria-valuemin="0" aria-valuemax="100"><i id="stfill"></i></div></div></div>
+ <div id="stbox" class="mini noprint" style="width:100%">
+  <div class="stitem" style="width:100%"><div class="lbl"><strong>Neste aparelho (navegador):</strong> <span id="sttx">calculando...</span></div><div class="stbar" id="stpb" role="progressbar" aria-label="Armazenamento usado neste aparelho" aria-valuemin="0" aria-valuemax="100"><i id="stfill"></i></div><div class="lbl stsub" id="stsub"></div></div>
+  <div class="stitem" id="dbbox" style="width:100%" hidden><div class="lbl"><strong>Banco compartilhado (Supabase):</strong> <span id="sttx2">consultando...</span></div><div class="stbar" id="stpb2" role="progressbar" aria-label="Armazenamento usado no banco compartilhado" aria-valuemin="0" aria-valuemax="100"><i id="stfill2"></i></div><div class="lbl stsub" id="stsub2"></div></div>
+ </div>
 </div>
 <div id="rvm" class="modal noprint" hidden role="dialog" aria-modal="true" aria-labelledby="rvt"><div class="box">
  <h3 id="rvt">Marcar para revistoria</h3>
@@ -197,6 +202,9 @@ body.pdfd .photos{grid-template-columns:repeat(2,1fr)}
    <div class="bar"><button class="btn" id="dlogin" type="button">Entrar com Google</button><button class="btn ghost" id="dlogout" type="button" hidden>Sair</button><button class="btn ghost" id="dbackup" type="button" hidden>Enviar backup completo ao Drive</button></div>
    <p class="empty" id="dmsg" role="status"></p>
   </div>
+  <h3 class="grp" style="margin-top:14px">Ordem de prioridade das vistorias</h3>
+  <p class="lbl" style="margin:4px 0 8px">Um loteamento por linha, do primeiro ao último. A rota segue essa ordem; dentro de cada loteamento, os processos ficam do mais próximo ao mais próximo. Loteamentos que não estão na lista vão depois.</p>
+  <textarea id="cord" rows="6" aria-label="Ordem de prioridade dos loteamentos" style="margin-bottom:6px"></textarea>
   <h3 class="grp" style="margin-top:14px">Aplicativo de mapa</h3>
   <p class="lbl" style="margin:4px 0 8px" id="mpst"></p>
   <div class="bar"><button class="btn ghost sm" id="mpalt" type="button"></button></div>
@@ -351,7 +359,7 @@ const blank=()=>({id:"r"+Date.now().toString(36),f:{},c:{},m:{},p:[],t:Date.now(
 let S=blank(),DB=null,timer=null,dirty=false;
 const FIXOS=["Maisa Fugita","Francisco Arlon","Carol Pinheiro"];
 const LOTES=["Granville","Conviver","Jardim Monte Verde","Cajuí","Cidade 2000"];
-let CFG={lotes:[{n:"Granville",m:""},{n:"Conviver",m:"2.5"},{n:"Jardim Monte Verde",m:"2"},{n:"Cajuí",m:"2"},{n:"Cidade 2000",m:""}],faixa:"1.2",arv:"2",mapa:"google"};
+let CFG={lotes:[{n:"Granville",m:""},{n:"Conviver",m:"2.5"},{n:"Jardim Monte Verde",m:"2"},{n:"Cajuí",m:"2"},{n:"Cidade 2000",m:""}],faixa:"1.2",arv:"2",mapa:"google",ordem:["Cidade 2000","Mirante do Leste","Cajuí","Conviver","Jardim Monte Verde"]};
 try{const c=localStorage.getItem("relfoto_cfg");if(c)CFG=Object.assign(CFG,JSON.parse(c));else{const o=JSON.parse(localStorage.getItem("relfoto_minc")||"{}");Object.keys(o).forEach(k=>{const l=CFG.lotes.find(z=>z.n.toLowerCase()===k);if(l&&o[k]!=="")l.m=o[k]})}}catch(e){}
 function cfgSave(){try{localStorage.setItem("relfoto_cfg",JSON.stringify(CFG))}catch(e){}}
 const num=v=>{const n=parseFloat(String(v==null?"":v).replace(",","."));return isNaN(n)?null:n};
@@ -400,31 +408,41 @@ function gBuild(){GIDX={};if(!GEO||!GEO.attr)return;GEO.pts.forEach(q=>{const k=
 const mapaNome=()=>CFG.mapa==="osm"?"OpenStreetMap":"Google Maps";
 const gLink=q=>CFG.mapa==="osm"?`https://www.openstreetmap.org/?mlat=${q.la}&mlon=${q.lo}#map=19/${q.la}/${q.lo}`:`https://www.google.com/maps/search/?api=1&query=${q.la},${q.lo}`;
 const gFind=x=>GIDX[gn(x.f.insc)]||null;
-/* ordem da rota: caminho mais curto entre os pontos (vizinho mais próximo + 2-opt), por data */
+/* ordem da rota: 1) prioridade do loteamento (Configurações); 2) dentro de cada loteamento, caminho mais curto
+   (vizinho mais próximo + 2-opt), começando perto de onde a parada anterior terminou; tudo separado por data */
 const hav=(a,b)=>{const R=6371000,r=Math.PI/180,dl=(b.la-a.la)*r,dn=(b.lo-a.lo)*r,h=Math.sin(dl/2)**2+Math.cos(a.la*r)*Math.cos(b.la*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
 const fmtDist=m=>m<1000?Math.round(m/10)*10+" m":(m/1000).toFixed(1).replace(".",",")+" km";
-function vizinho(arr,info){
+const nrm=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();
+const rankLote=x=>{const o=(CFG.ordem||[]).map(nrm),i=o.indexOf(nrm(x.f.lote));return i<0?o.length:i};
+function vizinho(arr,info,from,off){
  const com=[],sem=[];arr.forEach(x=>{const q=gFind(x);q?com.push({x,q}):sem.push(x)});
  const n=com.length;let ord=com.map(c=>c.x);
  if(n>=2){
   const D=com.map(a=>com.map(b=>hav(a.q,b.q))),len=r=>{let t=0;for(let i=1;i<r.length;i++)t+=D[r[i-1]][r[i]];return t};
-  let best=null,bl=Infinity;
-  for(let s0=0;s0<n;s0++){
+  let starts=[...Array(n).keys()];
+  if(from){let m=0,md=Infinity;com.forEach((c,i)=>{const d=hav(from,c.q);if(d<md){md=d;m=i}});starts=[m]}
+  const i0=from?1:0;let best=null,bl=Infinity;
+  starts.forEach(s0=>{
    const r=[s0],u=new Set(r);
    for(let k=1;k<n;k++){const c=r[r.length-1];let m=-1,md=Infinity;for(let j=0;j<n;j++)if(!u.has(j)&&D[c][j]<md){md=D[c][j];m=j}r.push(m);u.add(m)}
    let imp=true,it=0;
-   while(imp&&it++<50){imp=false;for(let i=0;i<n-1;i++)for(let j=i+1;j<n;j++){
+   while(imp&&it++<50){imp=false;for(let i=i0;i<n-1;i++)for(let j=i+1;j<n;j++){
     const a=i>0?D[r[i-1]][r[i]]:0,b=j<n-1?D[r[j]][r[j+1]]:0,a2=i>0?D[r[i-1]][r[j]]:0,b2=j<n-1?D[r[i]][r[j+1]]:0;
     if(a2+b2<a+b-1e-6){const seg=r.slice(i,j+1).reverse();r.splice(i,j-i+1,...seg);imp=true}}}
-   const l=len(r);if(l<bl-1e-6){bl=l;best=r}}
+   const l=len(r);if(l<bl-1e-6){bl=l;best=r}});
   ord=best.map(i=>com[i].x);
-  ord.forEach((x,i)=>{info[x.id]={n:i+1,d:i>0?hav(gFind(ord[i-1]),gFind(x)):null}});
- }else if(n===1)info[ord[0].id]={n:1,d:null};
- sem.forEach((x,i)=>{info[x.id]={n:ord.length+i+1,d:null,sc:true}});
- return ord.concat(sem)}
+ }
+ ord.forEach((x,i)=>{const prev=i>0?gFind(ord[i-1]):from;info[x.id]={n:off+i+1,d:prev?hav(prev,gFind(x)):null}});
+ sem.forEach((x,i)=>{info[x.id]={n:off+ord.length+i+1,d:null,sc:true}});
+ return{lista:ord.concat(sem),ultimo:ord.length?gFind(ord[ord.length-1]):from}}
 function rotaOrdem(arr,info){
  const por={};arr.forEach(x=>{const d=x.f.data||"";(por[d]=por[d]||[]).push(x)});
- let out=[];Object.keys(por).sort((p,q)=>(p||"9").localeCompare(q||"9")).forEach(d=>{out=out.concat(vizinho(por[d],info))});return out}
+ let out=[];
+ Object.keys(por).sort((p,q)=>(p||"9").localeCompare(q||"9")).forEach(d=>{
+  const rk={};por[d].forEach(x=>{const r=rankLote(x);(rk[r]=rk[r]||[]).push(x)});
+  let from=null,off=0;
+  Object.keys(rk).map(Number).sort((a,b)=>a-b).forEach(r=>{const v=vizinho(rk[r],info,from,off);out=out.concat(v.lista);off+=v.lista.length;from=v.ultimo})});
+ return out}
 function ordemPorAnalista(arr){
  const kk=x=>(x.f.analista||"").trim().toLowerCase(),g={};arr.forEach(x=>{(g[kk(x)]=g[kk(x)]||[]).push(x)});
  let out=[];Object.keys(g).sort((a,b)=>a===""?1:b===""?-1:a.localeCompare(b)).forEach(k=>{out=out.concat(rotaOrdem(g[k],{}))});return out}
@@ -480,12 +498,17 @@ async function delRep(id){if(!confirm("Excluir este relatório e suas fotos? Nã
  if(id===S.id){dirty=false;S=blank();paint();if(emForm())tela("lista")}list()}
 const $=id=>document.getElementById(id);
 const mb=n=>n>=1073741824?(n/1073741824).toFixed(2).replace(".",",")+" GB":(n/1048576).toFixed(n>=104857600?0:1).replace(".",",")+" MB";
-async function storUI(){const tx=$("sttx"),bar=$("stpb"),fl=$("stfill");if(!tx)return;
- let rel=0;try{if(DB)(await dbAll()).forEach(x=>{rel+=JSON.stringify(x).length})}catch(e){}
+function barPaint(sfx,us,qt){const bar=$("stpb"+sfx),fl=$("stfill"+sfx);
+ if(!(us!=null&&qt>0)){bar.hidden=true;return null}
+ const pc=Math.min(100,us/qt*100);fl.style.width=Math.max(pc,.5)+"%";bar.hidden=false;
+ bar.classList.toggle("warn",pc>=70&&pc<90);bar.classList.toggle("crit",pc>=90);bar.setAttribute("aria-valuenow",Math.round(pc));
+ return pc<1?pc.toFixed(1).replace(".",","):String(Math.round(pc))}
+async function storUI(){const tx=$("sttx");if(!tx)return;
+ let rel=0,qtd=0;try{if(DB)(await dbAll()).forEach(x=>{rel+=JSON.stringify(x).length;qtd++})}catch(e){}
  let us=null,qt=null;try{if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();us=e.usage;qt=e.quota}}catch(e){}
- if(us!=null&&qt){const pc=Math.min(100,us/qt*100);fl.style.width=Math.max(pc,.5)+"%";bar.hidden=false;bar.classList.toggle("warn",pc>=70&&pc<90);bar.classList.toggle("crit",pc>=90);bar.setAttribute("aria-valuenow",Math.round(pc));
-  tx.textContent="Armazenamento: "+mb(us)+" de "+mb(qt)+" ("+(pc<1?pc.toFixed(1).replace(".",","):Math.round(pc))+"% usado). Relatórios: "+mb(rel)+"."}
- else{bar.hidden=true;tx.textContent="Armazenamento: os relatórios ocupam "+mb(rel)+". Este navegador não informa o limite."}}
+ const pc=barPaint("",us,qt);
+ tx.textContent=pc!==null?mb(us)+" de "+mb(qt)+" ("+pc+"% usado)":"este navegador não informa o limite";
+ $("stsub").textContent="Tudo o que este site guarda neste aparelho (relatórios com fotos e arquivos do app para uso offline). Só os relatórios salvos aqui: "+mb(rel)+" ("+qtd+" relatório"+(qtd===1?"":"s")+")."}
 function tela(t){$("vlista").hidden=t!=="lista";$("vform").hidden=t!=="form";$("homeb").hidden=t!=="lista";$("listab").hidden=t!=="form";$("cabn").style.display=t==="lista"?"none":"";scrollTo(0,0)}
 const emForm=()=>!$("vform").hidden;
 function save(){pend();dirty=true;clearTimeout(timer);timer=setTimeout(flush,400)}
@@ -531,7 +554,8 @@ $("prev").onclick=()=>pv(true);$("pvx").onclick=()=>pv(false);$("pvp").onclick=(
 function cfgPaint(){gUI();$("cfgl").innerHTML=CFG.lotes.map((z,i)=>`<div class="row"><strong>${esc(z.n)}</strong><div class="bar" style="align-items:center"><div class="unit"><input type="number" inputmode="decimal" step="0.01" min="0" data-cl="${i}" value="${esc(z.m)}" aria-label="Calçada mínima de ${esc(z.n)}" style="width:100px"><span>m</span></div><button class="btn ghost sm" data-cr="${i}">Remover</button></div></div>`).join("");
  $("cfaixa").value=CFG.faixa;$("carv").value=CFG.arv;
  $("mpst").textContent="Mapa principal: "+mapaNome()+". Os botões “Mapa” e os links de localização abrem o ponto no "+mapaNome()+".";
- $("mpalt").textContent="Alternar para "+(CFG.mapa==="osm"?"Google Maps":"OpenStreetMap")}
+ $("mpalt").textContent="Alternar para "+(CFG.mapa==="osm"?"Google Maps":"OpenStreetMap");$("cord").value=(CFG.ordem||[]).join("\n")}
+$("cord").oninput=e=>{CFG.ordem=e.target.value.split("\n").map(t=>t.trim()).filter(Boolean);cfgApply()};
 $("mpalt").onclick=()=>{CFG.mapa=CFG.mapa==="osm"?"google":"osm";cfgSave();cfgPaint();gForm();list()};
 function cfgApply(){cfgSave();lotPaint();pend();list()}
 $("cfgb").onclick=()=>{const h=$("cfg").hidden;$("cfg").hidden=!h;if(h){cfgPaint();$("cfg").scrollIntoView()}};
