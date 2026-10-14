@@ -142,6 +142,13 @@ body.prev .gear{display:none}
 .stbar i{display:block;height:100%;width:0;background:var(--acc);transition:width .3s}
 .stbar.warn i{background:#b45309}.stbar.crit i{background:var(--nao)}
 #cfg .gbox h2{margin-top:-14px;padding-right:16px}
+.rel{position:relative}
+.rel>div:first-child{padding-right:44px}
+.gear{position:absolute;top:8px;right:8px;width:36px;height:36px;padding:0;border:1px solid var(--line);background:var(--bg);color:var(--acc);border-radius:50%;font-size:1.15rem;line-height:1;cursor:pointer}
+.st.df{background:#1d6b3a;color:#fff}
+.st.pl{background:#fff3e0;color:#b45309;border:1px solid #b45309}
+.st.pn{background:#fdecea;color:#a63d2f;border:1px solid #a63d2f}
+#gmb button{width:100%;text-align:left;margin-top:8px}
 .acc{margin-top:14px}
 .acch{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:52px;padding:12px 14px;border:2px solid var(--acc);background:var(--acc);color:#fff;border-radius:6px;font:700 1.05rem "Trebuchet MS",Verdana,system-ui,sans-serif;cursor:pointer;text-align:left}
 .acch .n{font-weight:400;font-size:.95rem}
@@ -169,6 +176,17 @@ body.prev .gear{display:none}
   <div class="stitem" id="dbbox" style="width:100%" hidden><div class="lbl"><strong>Banco compartilhado (Supabase):</strong> <span id="sttx2">consultando...</span></div><div class="stbar" id="stpb2" role="progressbar" aria-label="Armazenamento usado no banco compartilhado" aria-valuemin="0" aria-valuemax="100"><i id="stfill2"></i></div><div class="lbl stsub" id="stsub2"></div></div>
  </div>
 </div>
+<div id="plm" class="modal noprint" hidden role="dialog" aria-modal="true" aria-labelledby="plt"><div class="box">
+ <h3 id="plt">Pendência lançada no sistema</h3>
+ <p class="lbl" id="plp" style="margin-top:0">Informe o dia em que a pendência foi lançada no sistema. A equipe vê essa data na lista de processos.</p>
+ <input id="pld" type="date" aria-label="Data em que a pendência foi lançada" style="margin-bottom:14px">
+ <div class="bar"><button class="btn" id="plok" type="button">Confirmar</button><button class="btn ghost" id="plno" type="button">Cancelar</button></div>
+</div></div>
+<div id="gmm" class="modal noprint" hidden role="dialog" aria-modal="true" aria-labelledby="gmt"><div class="box">
+ <h3 id="gmt">Opções do processo</h3>
+ <div id="gmb"></div>
+ <div class="bar" style="margin-top:14px"><button class="btn ghost" id="gmx" type="button">Fechar</button></div>
+</div></div>
 <div id="rvm" class="modal noprint" hidden role="dialog" aria-modal="true" aria-labelledby="rvt"><div class="box">
  <h3 id="rvt">Marcar para revistoria</h3>
  <p class="lbl" style="margin-top:0">A vistoria atual fica guardada no histórico e o processo volta para a rota de vistorias. Escolha a data da revistoria no calendário. Se deixar em branco, você define depois.</p>
@@ -258,8 +276,17 @@ body.prev .gear{display:none}
    <button type="button" class="acch sec" id="acch_ok" data-acc="ok" aria-expanded="false" aria-controls="accb_ok"><span>Relatórios salvos <span class="n" id="nok"></span></span><span class="chev" aria-hidden="true">&#9662;</span></button>
    <div class="accb" id="accb_ok" hidden>
     <div class="bar" style="align-items:center"><button class="btn ghost sm" id="agrb2" type="button">Ver lista única</button></div>
-    <p class="lbl" style="margin:6px 0 0">Para gerar o PDF de um processo, use o botão PDF dele.</p>
+    <p class="lbl" style="margin:6px 0 0">Processos vistoriados e em análise (inclui os com pendência). Use “Pendência lançada” para registrar o dia em que a pendência foi lançada no sistema e “Deferido” quando o processo for deferido (ele vai para a pasta Deferidos). Para gerar o PDF, use o botão PDF dele.</p>
+    <p class="lbl" id="oksum" style="margin:8px 0 0"></p>
     <div id="lista2"></div>
+   </div>
+  </div>
+  <div class="acc">
+   <button type="button" class="acch sec" id="acch_df" data-acc="df" aria-expanded="false" aria-controls="accb_df"><span>Deferidos <span class="n" id="ndf"></span></span><span class="chev" aria-hidden="true">&#9662;</span></button>
+   <div class="accb" id="accb_df" hidden>
+    <div class="bar" style="align-items:center"><button class="btn ghost sm" id="agrb3" type="button">Ver lista única</button></div>
+    <p class="lbl" style="margin:6px 0 0">Processos já deferidos, separados dos que estão em análise ou com pendência. Pela engrenagem de cada processo você pode devolvê-lo para análise.</p>
+    <div id="lista3"></div>
    </div>
   </div>
  </section>
@@ -359,10 +386,10 @@ body.prev .gear{display:none}
 <script>
 const CHECKS=[["agua","Água (ligação de abastecimento)"],["energia","Energia elétrica"],["equip","Equipamentos (chuveiro, pia, torneira, vaso sanitário etc.)"],["muro","Muro ou fechamento"],["calcada","Calçada construída"]];
 const MEDS=[["rfrente","Recuo frontal"],["resq","Recuo lateral esquerdo"],["rdir","Recuo lateral direito"],["rfundos","Recuo de fundos"],["tcalcada","Tamanho da calçada"],["faixa","Faixa livre"]];
-let TIPO="";const AGR={ag:false,ok:true};
-let OPEN={ag:true,ok:false,fl:false};try{const o=JSON.parse(localStorage.getItem("relfoto_acc")||"null");if(o)OPEN=Object.assign(OPEN,o)}catch(e){}
+let TIPO="";const AGR={ag:false,ok:true,df:true};
+let OPEN={ag:true,ok:false,df:false,fl:false};try{const o=JSON.parse(localStorage.getItem("relfoto_acc")||"null");if(o)OPEN=Object.assign(OPEN,o)}catch(e){}
 const accSave=()=>{try{localStorage.setItem("relfoto_acc",JSON.stringify(OPEN))}catch(e){}};
-function accPaint(){["ag","ok","fl"].forEach(k=>{document.getElementById("accb_"+k).hidden=!OPEN[k];document.getElementById("acch_"+k).setAttribute("aria-expanded",String(!!OPEN[k]))})}
+function accPaint(){["ag","ok","df","fl"].forEach(k=>{document.getElementById("accb_"+k).hidden=!OPEN[k];document.getElementById("acch_"+k).setAttribute("aria-expanded",String(!!OPEN[k]))})}
 const blank=()=>({id:"r"+Date.now().toString(36),f:{},c:{},m:{},p:[],t:Date.now(),tipo:TIPO});
 let S=blank(),DB=null,timer=null,dirty=false;
 const FIXOS=["Maisa Fugita","Francisco Arlon","Carol Pinheiro"];
@@ -399,7 +426,7 @@ function snapHTML(h){const rows=[],cs=CHECKS.filter(([k])=>h.c[k]).map(([k,t])=>
  ${h.p.length?`<div class="photos">${h.p.map((f,i)=>`<figure class="ph" style="margin:0"><img src="${f.src}" alt="Foto ${i+1} da ${h.n}ª vistoria"><div class="b"><span class="cap">${esc(f.cap||"")}</span></div></figure>`).join("")}</div>`:""}`}
 function histPaint(){const h=S.hist||[];$("hsec").hidden=!h.length;$("hist").innerHTML=h.map(snapHTML).join("")}
 function tipoPaint(){const n=(S.hist||[]).length;$("tipoL").textContent=TIPO?"Tipo de processo: "+TIPOS[TIPO]+(n?" - "+(n+1)+"ª vistoria (revistoria)":""):""}
-function arquivar(o){o.hist=(o.hist||[]).concat({n:(o.hist||[]).length+1,data:o.f.data||"",c:o.c,m:o.m,p:o.p,obs:o.f.obs||"",pend:pends(o).p,t:Date.now()});o.c={};o.m={};o.p=[];o.f.obs=""}
+function arquivar(o){o.hist=(o.hist||[]).concat({n:(o.hist||[]).length+1,data:o.f.data||"",c:o.c,m:o.m,p:o.p,obs:o.f.obs||"",pend:pends(o).p,t:Date.now(),def:o.def||0,pl:o.pl||""});delete o.def;delete o.pl;o.c={};o.m={};o.p=[];o.f.obs=""}
 function pedirData(){return new Promise(res=>{const m=$("rvm"),d=$("rvd");d.value="";m.hidden=false;d.focus();try{d.showPicker()}catch(e){}
  const fim=v=>{m.hidden=true;$("rvok").onclick=null;$("rvno").onclick=null;res(v)};
  $("rvok").onclick=()=>fim(d.value);$("rvno").onclick=()=>fim(null)})}
@@ -409,6 +436,57 @@ async function revistoriar(id){await flush();const o=(await dbAll()).find(x=>x.i
  arquivar(o);o.f.data=iso;o.t=Date.now();
  try{await dbPut(o)}catch(e){alert("Não foi possível salvar (espaço cheio?).");return}
  if(S.id===id){S=o;paint()}if(emForm()){OPEN.ag=true;accSave();tela("lista")}list()}
+async function marcarDef(id,on){await flush();const o=(await dbAll()).find(x=>x.id===id);if(!o)return;
+ if(on){if(!feito(o)){alert("Este processo ainda não foi vistoriado.");return}
+  const np=pends(o).p.length;if(np&&!confirm("Este processo tem "+np+" pendência(s). Marcar como deferido mesmo assim?"))return;
+  const iso=await pedirDataDef(hojeISO());if(iso===null)return;if(!iso){alert("Escolha o dia do deferimento.");return}o.def=iso}
+ else delete o.def;
+ o.t=Date.now();
+ try{await dbPut(o)}catch(e){alert("Não foi possível salvar (espaço cheio?).");return}
+ if(S.id===id){S=o;paint()}list()}
+async function tirarRevistoria(id){await flush();const o=(await dbAll()).find(x=>x.id===id);
+ if(!o||feito(o)||!(o.hist||[]).length){alert("Este processo não está marcado para revistoria.");return}
+ if(!confirm("Tirar este processo da revistoria? A vistoria anterior volta a valer e ele sai da rota de vistorias."))return;
+ const h=o.hist[o.hist.length-1];o.hist=o.hist.slice(0,-1);o.c=h.c||{};o.m=h.m||{};o.p=h.p||[];o.f.obs=h.obs||"";o.f.data=h.data||"";
+ if(h.def)o.def=h.def;else delete o.def;if(h.pl)o.pl=h.pl;else delete o.pl;
+ o.t=Date.now();
+ try{await dbPut(o)}catch(e){alert("Não foi possível salvar (espaço cheio?).");return}
+ if(S.id===id){S=o;paint()}list()}
+const hojeISO=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const defTxt=x=>typeof x.def==="number"?new Date(x.def).toLocaleDateString("pt-BR"):fd(x.def);
+function pedirDataGen(tit,txt,ini){return new Promise(res=>{const m=$("plm"),d=$("pld");$("plt").textContent=tit;$("plp").textContent=txt;d.setAttribute("aria-label",tit);d.value=ini||hojeISO();m.hidden=false;
+ const fim=v=>{m.hidden=true;$("plok").onclick=null;$("plno").onclick=null;res(v)};
+ $("plok").onclick=()=>fim(d.value);$("plno").onclick=()=>fim(null)})}
+const pedirDataPl=ini=>pedirDataGen("Pendência lançada no sistema","Informe o dia em que a pendência foi lançada no sistema. A equipe vê essa data na lista de processos.",ini);
+const pedirDataDef=ini=>pedirDataGen("Data do deferimento","Informe o dia em que o processo foi deferido. A equipe vê essa data na pasta Deferidos.",ini);
+async function lancarPend(id){await flush();const o=(await dbAll()).find(x=>x.id===id);if(!o||!feito(o)){alert("Este processo ainda não foi vistoriado.");return}
+ const iso=await pedirDataPl(o.pl||"");if(iso===null)return;
+ if(!iso){alert("Escolha o dia em que a pendência foi lançada.");return}
+ o.pl=iso;o.t=Date.now();
+ try{await dbPut(o)}catch(e){alert("Não foi possível salvar (espaço cheio?).");return}
+ if(S.id===id){S=o;paint()}list()}
+async function removerPl(id){await flush();const o=(await dbAll()).find(x=>x.id===id);if(!o||!o.pl)return;
+ if(!confirm("Remover a marca de pendência lançada (era "+fd(o.pl)+")?"))return;
+ delete o.pl;o.t=Date.now();
+ try{await dbPut(o)}catch(e){alert("Não foi possível salvar (espaço cheio?).");return}
+ if(S.id===id){S=o;paint()}list()}
+async function alterarDef(id){await flush();const o=(await dbAll()).find(x=>x.id===id);if(!o||!o.def)return;
+ const ini=typeof o.def==="number"?(()=>{const d=new Date(o.def);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")})():o.def;
+ const iso=await pedirDataDef(ini);if(iso===null)return;if(!iso){alert("Escolha o dia do deferimento.");return}
+ o.def=iso;o.t=Date.now();
+ try{await dbPut(o)}catch(e){alert("Não foi possível salvar (espaço cheio?).");return}
+ if(S.id===id){S=o;paint()}list()}
+async function abrirGear(id){await flush();const x=(await dbAll()).find(r=>r.id===id);if(!x)return;
+ const fe=feito(x),re=!fe&&(x.hist||[]).length>0,df=fe&&!!x.def,o=[];
+ if(fe){o.push(["pl",x.pl?"Alterar a data da pendência lançada":"Pendência lançada no sistema",x.pl?"Consta lançada em "+fd(x.pl)+".":"Registra o dia em que a pendência foi lançada no sistema."]);if(x.pl)o.push(["plx","Remover a marca de pendência lançada","Apaga a data registrada."])}
+ if(re)o.push(["tirar","Tirar da revistoria","A vistoria anterior volta a valer e o processo sai da rota de vistorias."]);
+ if(fe)o.push(["rev","Marcar para revistoria","Guarda a vistoria atual no histórico e devolve o processo à rota de vistorias."]);
+ if(df)o.push(["defd","Alterar a data do deferimento","Consta deferido em "+defTxt(x)+"."]);
+ if(df)o.push(["undef","Voltar para análise","Tira o processo dos deferidos e devolve aos relatórios salvos."]);
+ if(!o.length)return;
+ $("gmt").textContent="Processo "+((x.f.proc||"").trim()||"sem número");
+ $("gmb").innerHTML=o.map(([a,t,d])=>`<button type="button" class="btn ghost" data-ga="${a}" data-id="${x.id}"><strong>${t}</strong><br><span class="lbl">${d}</span></button>`).join("");
+ $("gmm").hidden=false}
 let GEO=null,GIDX={};
 const gTx=(mode,fn)=>new Promise((ok,no)=>{const t=DB.transaction("g",mode),rq=fn(t.objectStore("g"));t.oncomplete=()=>ok(rq&&rq.result);t.onerror=()=>no(t.error)});
 const gn=v=>String(v==null?"":v).toLowerCase().replace(/[^a-z0-9]/g,"");
@@ -490,16 +568,17 @@ async function list(){let a=[];try{a=DB?await dbAll():[]}catch(e){}
  let v=a.filter(x=>((x.f.proc||"")+" "+(x.f.insc||"")+" "+addr(x)).toLowerCase().includes(q)&&(!sel.value||(sel.value==="__sem"?!key(x):key(x)===sel.value))&&(!$("fdt").value||x.f.data===$("fdt").value));
  const fs=[];if($("fdt").value)fs.push("data "+fd($("fdt").value));if(sel.value)fs.push(sel.options[sel.selectedIndex].text);if(q)fs.push("busca “"+$("busca").value.trim()+"”");
  $("flsum").textContent=fs.length?"Ativos: "+fs.join(" · "):"Nenhum filtro ativo";
- const vAg=v.filter(x=>!feito(x)),vOk=v.filter(feito);
- $("nag").textContent="("+vAg.length+")";$("nok").textContent="("+vOk.length+")";
+ const vAg=v.filter(x=>!feito(x)),vOk=v.filter(x=>feito(x)&&!x.def),vDf=v.filter(x=>feito(x)&&x.def);
+ $("nag").textContent="("+vAg.length+")";$("nok").textContent="("+vOk.length+")";$("ndf").textContent="("+vDf.length+")";
+ {const aL=vOk.filter(x=>!x.pl&&pends(x).p.length).length,jL=vOk.filter(x=>x.pl).length;$("oksum").textContent=(aL||jL)?"Em análise: "+aL+" com pendência a lançar · "+jL+" com pendência lançada.":""}
  const pinta=(view,arr,box)=>{
-  const agr=AGR[view];$(view==="ag"?"agrb":"agrb2").textContent=agr?"Ver lista única":"Ver por analista";
+  const agr=AGR[view];$(view==="ag"?"agrb":view==="ok"?"agrb2":"agrb3").textContent=agr?"Ver lista única":"Ver por analista";
   const g={};arr.forEach(x=>{const k=agr?(key(x)||"__sem"):"__todos";(g[k]=g[k]||[]).push(x)});
   const ks=Object.keys(g).sort((x,y)=>x==="__sem"?1:y==="__sem"?-1:x.localeCompare(y));
   const ROT={};if(view==="ag")ks.forEach(k=>{g[k]=rotaOrdem(g[k],ROT)});
-  const item=x=>{const k=(x.f.proc||"").trim(),fe=feito(x),hn=(x.hist||[]).length,re=!fe&&hn>0,np=fe?pends(x).p.length:0,gp=gFind(x),rt=ROT[x.id];return `<div class="rel${x.id===S.id?" cur":""}"><div><strong>${rt?rt.n+". ":""}Processo ${esc(k)||"sem número"}</strong> <span class="st ${x.c.fechado==="Sim"?"rv":fe?"ok2":re?"rv":"ag"}">${x.c.fechado==="Sim"?"Imóvel fechado":fe?(hn?"Vistoriado ("+(hn+1)+"ª)":"Vistoriado"):re?"A revistoriar":"A vistoriar"}</span>${n[k]>1?' <span class="dup">número repetido</span>':""}<div class="lbl">${x.f.data?"Vistoria "+fd(x.f.data)+" - ":""}${esc(addr(x)||"Sem endereço")}${x.f.lote?" - "+esc(x.f.lote):""}${!agr&&nm(x)?" - Analista: "+esc(nm(x)):""} - ${x.p.length} foto(s)${np?` - <span class="dup">${np} pendência(s)</span>`:""}${rt&&rt.d!=null?` - ${fmtDist(rt.d)} da parada anterior`:""}${rt&&rt.sc?" - sem coordenada (final da rota)":""}</div></div><div class="bar"><button class="btn ghost sm" data-open="${x.id}">Abrir</button>${fe?`<button class="btn sm" data-pdf="${x.id}">PDF</button>`:""}${gp?`<a class="btn ghost sm" href="${gLink(gp)}" target="_blank" rel="noopener">Mapa</a>`:""}${fe?`<button class="btn ghost sm" data-rev="${x.id}">Revistoriar</button>`:""}<button class="btn ghost sm" data-del="${x.id}">Excluir</button></div></div>`};
-  $(box).innerHTML=ks.length?ks.map(k=>(k==="__todos"?"":`<h3 class="grp">${k==="__sem"?"Sem analista":esc(nomes[k])} <span class="lbl">(${g[k].length})</span></h3>`)+g[k].map(item).join("")).join(""):'<p class="empty">'+(view==="ok"?"Nenhum relatório salvo encontrado.":"Nenhum processo a vistoriar encontrado. Use “Cadastrar processo” para incluir.")+'</p>'};
- pinta("ag",vAg,"lista");pinta("ok",vOk,"lista2");accPaint()}
+  const item=x=>{const k=(x.f.proc||"").trim(),fe=feito(x),hn=(x.hist||[]).length,re=!fe&&hn>0,df=fe&&!!x.def,np=fe?pends(x).p.length:0,gp=gFind(x),rt=ROT[x.id];return `<div class="rel${x.id===S.id?" cur":""}">${fe||re?`<button class="gear" type="button" data-gear="${x.id}" aria-label="Opções do processo ${esc(k)}" title="Opções do processo">&#9881;&#xFE0E;</button>`:""}<div><strong>${rt?rt.n+". ":""}Processo ${esc(k)||"sem número"}</strong> <span class="st ${df?"df":x.c.fechado==="Sim"?"rv":fe?"ok2":re?"rv":"ag"}">${df?"Deferido":x.c.fechado==="Sim"?"Imóvel fechado":fe?(hn?"Vistoriado ("+(hn+1)+"ª)":"Vistoriado"):re?"A revistoriar":"A vistoriar"}</span>${fe&&x.pl?` <span class="st pl">Pendência lançada em ${fd(x.pl)}</span>`:fe&&!df&&np?` <span class="st pn">Pendência a lançar</span>`:""}${n[k]>1?' <span class="dup">número repetido</span>':""}<div class="lbl">${x.f.data?"Vistoria "+fd(x.f.data)+" - ":""}${esc(addr(x)||"Sem endereço")}${x.f.lote?" - "+esc(x.f.lote):""}${!agr&&nm(x)?" - Analista: "+esc(nm(x)):""} - ${x.p.length} foto(s)${df?" - deferido em "+defTxt(x):""}${np?` - <span class="dup">${np} pendência(s)</span>`:""}${rt&&rt.d!=null?` - ${fmtDist(rt.d)} da parada anterior`:""}${rt&&rt.sc?" - sem coordenada (final da rota)":""}</div></div><div class="bar"><button class="btn ghost sm" data-open="${x.id}">Abrir</button>${fe?`<button class="btn sm" data-pdf="${x.id}">PDF</button>`:""}${gp?`<a class="btn ghost sm" href="${gLink(gp)}" target="_blank" rel="noopener">Mapa</a>`:""}${fe&&!df&&np&&!x.pl?`<button class="btn sm" data-pl="${x.id}">Pendência lançada</button>`:""}${fe&&!df?`<button class="btn sm" data-def="${x.id}">Deferido</button>`:""}<button class="btn ghost sm" data-del="${x.id}">Excluir</button></div></div>`};
+  $(box).innerHTML=ks.length?ks.map(k=>(k==="__todos"?"":`<h3 class="grp">${k==="__sem"?"Sem analista":esc(nomes[k])} <span class="lbl">(${g[k].length})</span></h3>`)+g[k].map(item).join("")).join(""):'<p class="empty">'+(view==="df"?"Nenhum processo deferido ainda.":view==="ok"?"Nenhum relatório salvo encontrado.":"Nenhum processo a vistoriar encontrado. Use “Cadastrar processo” para incluir.")+'</p>'};
+ pinta("ag",vAg,"lista");pinta("ok",vOk,"lista2");pinta("df",vDf,"lista3");accPaint()}
 async function openRep(id){await flush();const x=(await dbAll()).find(r=>r.id===id);if(x){S=norm(x);cur();paint();list();tela("form")}}
 async function newRep(){await flush();S=blank();paint();list();tela("form");$("proc").focus()}
 async function delRep(id){if(!confirm("Excluir este relatório e suas fotos? Não dá para desfazer."))return;try{await dbDel(id)}catch(e){}
@@ -596,7 +675,7 @@ $("c_add").onclick=async()=>{const v={},m=$("c_msg");CAMP.forEach(k=>v[k]=$("c_"
  try{await dbPut(o)}catch(e){m.textContent="Não foi possível salvar o cadastro (espaço cheio?).";return}
  ["proc","insc","rua","numero","quadra","nlote"].forEach(k=>$("c_"+k).value="");$("c_proc").focus();
  m.textContent="Processo "+v.proc+" cadastrado. Você pode cadastrar o próximo.";list()};
-$("fdt").onchange=list;$("agrb").onclick=()=>{AGR.ag=!AGR.ag;list()};$("agrb2").onclick=()=>{AGR.ok=!AGR.ok;list()};$("fall").onclick=()=>{$("fdt").value="";list()};
+$("fdt").onchange=list;$("agrb").onclick=()=>{AGR.ag=!AGR.ag;list()};$("agrb2").onclick=()=>{AGR.ok=!AGR.ok;list()};$("agrb3").onclick=()=>{AGR.df=!AGR.df;list()};$("fall").onclick=()=>{$("fdt").value="";list()};
 $("fhoje").onclick=()=>{const d=new Date();$("fdt").value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");list()};
 
 /* ===== PDF de todos os relatórios de uma data + rota em texto ===== */
@@ -697,7 +776,9 @@ async function importar(file){const m=$("bmsg");m.textContent="";let j;
  paint();cfgPaint();list();m.textContent=ap.length+" relatório(s) importado(s)"+(iv?"; "+iv+" inválido(s) ignorado(s)":"")+"."}
 $("bexp").onclick=exportar;$("bimp").onchange=e=>{if(e.target.files[0])importar(e.target.files[0]);e.target.value=""};
 $("clear").onclick=()=>delRep(S.id);$("novo").onclick=newRep;$("busca").oninput=list;$("fan").onchange=list;
-document.addEventListener("click",e=>{const t=e.target;if(t.dataset.open)openRep(t.dataset.open);if(t.dataset.pdf)pdfUm(t.dataset.pdf);if(t.dataset.del)delRep(t.dataset.del);if(t.dataset.rev)revistoriar(t.dataset.rev)});
+document.addEventListener("click",e=>{const t=e.target;if(t.dataset.open)openRep(t.dataset.open);if(t.dataset.pdf)pdfUm(t.dataset.pdf);if(t.dataset.del)delRep(t.dataset.del);if(t.dataset.def)marcarDef(t.dataset.def,true);if(t.dataset.pl)lancarPend(t.dataset.pl);if(t.dataset.gear)abrirGear(t.dataset.gear)});
+$("gmx").onclick=()=>{$("gmm").hidden=true};
+$("gmb").onclick=e=>{const b=e.target.closest("[data-ga]");if(!b)return;const a=b.dataset.ga,id=b.dataset.id;$("gmm").hidden=true;if(a==="rev")revistoriar(id);else if(a==="tirar")tirarRevistoria(id);else if(a==="undef")marcarDef(id,false);else if(a==="defd")alterarDef(id);else if(a==="pl")lancarPend(id);else if(a==="plx")removerPl(id)};
 addEventListener("pagehide",flush);
 ["proc","insc","numero","quadra","nlote","c_proc","c_insc","c_numero","c_quadra","c_nlote","busca"].forEach(id=>{const e=$(id);e.setAttribute("autocapitalize","none");e.setAttribute("autocorrect","off");e.spellcheck=false});
 ["rua","bairro","lote","analista","c_rua","c_bairro","nln"].forEach(id=>$(id).setAttribute("autocapitalize","words"));
