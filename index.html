@@ -247,6 +247,7 @@ body.prev .gear{display:none}
    <div class="f"><label class="lbl" for="c_quadra">Quadra</label><input id="c_quadra"></div>
    <div class="f"><label class="lbl" for="c_nlote">Lote</label><input id="c_nlote"></div>
    <div class="f"><label class="lbl" for="c_bairro">Bairro</label><input id="c_bairro"></div>
+   <div class="f"><label class="lbl" for="c_maps">Link do Google Maps (opcional)</label><input id="c_maps" inputmode="url" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Cole aqui o link ou as coordenadas"></div>
   </div>
   <datalist id="dl_ana"></datalist><datalist id="dl_lot"></datalist>
   <div class="bar" style="margin-top:14px"><button class="btn" id="c_add">Cadastrar processo</button><button class="btn ghost" id="c_x">Fechar</button></div>
@@ -300,7 +301,7 @@ body.prev .gear{display:none}
   <div class="grid">
    <div class="f"><label class="lbl" for="proc">Nº do processo</label><input id="proc" data-k="proc"></div>
    <div class="f"><label class="lbl" for="insc">Inscrição imobiliária</label><input id="insc" data-k="insc" autocomplete="off"></div>
-   <div class="f"><span class="lbl">Localização no mapa</span><div id="ginfo"></div></div>
+   <div class="f"><span class="lbl">Localização no mapa</span><div id="ginfo"></div><div class="noprint" style="margin-top:6px"><label class="lbl" for="maps">Link do Google Maps (opcional)</label><input id="maps" data-k="maps" inputmode="url" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Cole aqui o link ou as coordenadas"></div></div>
    <div class="f"><label class="lbl" for="rua">Nome da rua</label><input id="rua" data-k="rua"></div>
    <div class="f"><label class="lbl" for="numero">Número</label><input id="numero" data-k="numero" inputmode="numeric"></div>
    <div class="f"><label class="lbl" for="quadra">Quadra</label><input id="quadra" data-k="quadra"></div>
@@ -493,7 +494,20 @@ const gn=v=>String(v==null?"":v).toLowerCase().replace(/[^a-z0-9]/g,"");
 function gBuild(){GIDX={};if(!GEO||!GEO.attr)return;GEO.pts.forEach(q=>{const k=gn(q.p[GEO.attr]);if(k&&!GIDX[k])GIDX[k]=q})}
 const mapaNome=()=>CFG.mapa==="osm"?"OpenStreetMap":"Google Maps";
 const gLink=q=>CFG.mapa==="osm"?`https://www.openstreetmap.org/?mlat=${q.la}&mlon=${q.lo}#map=19/${q.la}/${q.lo}`:`https://www.google.com/maps/search/?api=1&query=${q.la},${q.lo}`;
-const gFind=x=>GIDX[gn(x.f.insc)]||null;
+/* Link do Maps informado à mão: aceita o link completo, o texto do "Compartilhar" (nome + link) ou só as coordenadas.
+   Links curtos (maps.app.goo.gl) abrem normalmente, mas não trazem coordenadas: não entram no cálculo da rota. */
+const mNum="(-?\\d{1,3}(?:\\.\\d+)?)";
+function mCoord(t){let d=String(t||"");try{d=decodeURIComponent(d)}catch(e){}
+ const rx=[new RegExp("!3d"+mNum+"!4d"+mNum),new RegExp("[?&](?:q|query|ll|destination|daddr|center|sll)="+mNum+"[,\\s+]+"+mNum),new RegExp("@"+mNum+","+mNum),
+  new RegExp("[?&]mlat="+mNum+"&mlon="+mNum),new RegExp("#map=\\d+/"+mNum+"/"+mNum),new RegExp("/place/"+mNum+","+mNum),new RegExp("^\\s*"+mNum+"\\s*[,;]\\s*"+mNum+"\\s*$")];
+ for(const r of rx){const m=d.match(r);if(m){const la=+m[1],lo=+m[2];if(Math.abs(la)<=90&&Math.abs(lo)<=180&&(la||lo))return{la,lo}}}return null}
+function mLink(t){t=String(t||"").trim();if(!t)return"";
+ const m=t.match(/(?:https?:\/\/|\b(?:www\.google\.[a-z.]+\/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl\/maps))[^\s<>"']*/i);
+ if(m)return/^https?:/i.test(m[0])?m[0]:"https://"+m[0];
+ const c=mCoord(t);return c?`https://www.google.com/maps/search/?api=1&query=${c.la},${c.lo}`:""}
+const gMan=x=>{const t=((x&&x.f&&x.f.maps)||"").trim();if(!t)return null;const u=mLink(t);return u?{u,c:mCoord(t)||mCoord(u)}:null};
+const gUrl=x=>{const m=gMan(x);if(m)return m.u;const q=GIDX[gn(x.f.insc)];return q?gLink(q):""};
+const gFind=x=>{const m=gMan(x);if(m&&m.c)return{la:m.c.la,lo:m.c.lo,p:{}};return GIDX[gn(x.f.insc)]||null};
 /* ordem da rota: 1) prioridade do loteamento (Configurações); 2) dentro de cada loteamento, caminho mais curto
    (vizinho mais próximo + 2-opt), começando perto de onde a parada anterior terminou; tudo separado por data */
 const hav=(a,b)=>{const R=6371000,r=Math.PI/180,dl=(b.la-a.la)*r,dn=(b.lo-a.lo)*r,h=Math.sin(dl/2)**2+Math.cos(a.la*r)*Math.cos(b.la*r)*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(h))};
@@ -533,8 +547,12 @@ function rotaOrdem(arr,info){
 function centro(g){if(!g||!g.coordinates)return null;const c=[];const w=a=>{if(typeof a[0]==="number")c.push(a);else a.forEach(w)};w(g.coordinates);if(!c.length)return null;
  if(g.type==="Point"||g.type==="MultiPoint")return c[0];return[c.reduce((t,z)=>t+z[0],0)/c.length,c.reduce((t,z)=>t+z[1],0)/c.length]}
 const gKeys=()=>[...new Set(GEO.pts.slice(0,100).flatMap(q=>Object.keys(q.p)))];
-function gForm(){const q=gFind(S),el=$("ginfo");
- el.innerHTML=!GEO?'<span class="lbl noprint">Carregue um GeoJSON em Configurações para ver o ponto do processo.</span>':!(S.f.insc||"").trim()?'<span class="lbl noprint">Informe a inscrição imobiliária para localizar o ponto no mapa.</span>':q?`<a class="noprint" href="${gLink(q)}" target="_blank" rel="noopener">Abrir no ${mapaNome()}</a> <span class="lbl">(${q.la}, ${q.lo})</span>`:'<span class="lbl noprint">Nenhum ponto encontrado para esta inscrição imobiliária.</span>'}
+function gForm(){const q=gFind(S),u=gUrl(S),m=gMan(S),mv=(S.f.maps||"").trim(),el=$("ginfo"),c=m?m.c:q;
+ el.innerHTML=u?`<a class="noprint" href="${esc(u)}" target="_blank" rel="noopener">Abrir no ${m?"mapa (link informado)":mapaNome()}</a>`+(c?` <span class="lbl">(${c.la}, ${c.lo})</span>`:` <span class="lbl noprint">(link sem coordenadas: abre normalmente, mas não entra na ordem da rota)</span>`)
+ :mv?'<span class="lbl noprint">O que foi colado não parece um link do Maps nem coordenadas.</span>'
+ :!GEO?'<span class="lbl noprint">Cole um link do Maps abaixo ou carregue um GeoJSON em Configurações.</span>'
+ :!(S.f.insc||"").trim()?'<span class="lbl noprint">Informe a inscrição imobiliária ou cole um link do Maps abaixo.</span>'
+ :'<span class="lbl noprint">Nenhum ponto encontrado para esta inscrição imobiliária. Cole um link do Maps abaixo.</span>'}
 async function gUI(){$("grem").hidden=!GEO;$("gsel").hidden=!GEO;
  if(!GEO){$("gst").textContent="Nenhum arquivo carregado.";return}
  $("gattr").innerHTML=gKeys().map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join("");$("gattr").value=GEO.attr;
@@ -598,7 +616,7 @@ async function list(){let a=[];try{a=DB?await dbAll():[]}catch(e){}
   const g={};arr.forEach(x=>{const k=agr?(key(x)||"__sem"):"__todos";(g[k]=g[k]||[]).push(x)});
   const ks=Object.keys(g).sort((x,y)=>x==="__sem"?1:y==="__sem"?-1:x.localeCompare(y));
   const ROT={};if(view==="ag")ks.forEach(k=>{g[k]=rotaOrdem(g[k],ROT)});
-  const item=x=>{const k=(x.f.proc||"").trim(),fe=feito(x),hn=(x.hist||[]).length,re=!fe&&hn>0,df=fe&&!!x.def,np=fe?pends(x).p.length:0,gp=gFind(x),rt=ROT[x.id];return `<div class="rel${x.id===S.id?" cur":""}">${fe||re?`<button class="gear" type="button" data-gear="${x.id}" aria-label="Opções do processo ${esc(k)}" title="Opções do processo">&#9881;&#xFE0E;</button>`:""}<div><strong>${rt?rt.n+". ":""}Processo ${esc(k)||"sem número"}</strong> <span class="st ${df?"df":x.c.fechado==="Sim"?"rv":fe?"ok2":re?"rv":"ag"}">${df?"Deferido":x.c.fechado==="Sim"?"Imóvel fechado":fe?(hn?"Vistoriado ("+(hn+1)+"ª)":"Vistoriado"):re?"A revistoriar":"A vistoriar"}</span>${fe&&x.pl?` <span class="st pl">Pendência lançada em ${fd(x.pl)}</span>`:fe&&!df&&np?` <span class="st pn">Pendência a lançar</span>`:""}${n[k]>1?' <span class="dup">número repetido</span>':""}<div class="lbl">${x.f.data?"Vistoria "+fd(x.f.data)+" - ":""}${esc(addr(x)||"Sem endereço")}${x.f.lote?" - "+esc(x.f.lote):""}${!agr&&nm(x)?" - Analista: "+esc(nm(x)):""} - ${x.p.length} foto(s)${df?" - deferido em "+defTxt(x):""}${np?` - <span class="dup">${np} pendência(s)</span>`:""}${rt&&rt.d!=null?` - ${fmtDist(rt.d)} da parada anterior`:""}${rt&&rt.sc?" - sem coordenada (final da rota)":""}</div></div><div class="bar"><button class="btn ghost sm" data-open="${x.id}">Abrir</button>${fe?`<button class="btn sm" data-pdf="${x.id}">PDF</button>`:""}${gp?`<a class="btn ghost sm" href="${gLink(gp)}" target="_blank" rel="noopener">Mapa</a>`:""}${fe&&!df&&np&&!x.pl?`<button class="btn sm" data-pl="${x.id}">Pendência lançada</button>`:""}${fe&&!df?`<button class="btn sm" data-def="${x.id}">Deferido</button>`:""}<button class="btn ghost sm" data-del="${x.id}">Excluir</button></div></div>`};
+  const item=x=>{const k=(x.f.proc||"").trim(),fe=feito(x),hn=(x.hist||[]).length,re=!fe&&hn>0,df=fe&&!!x.def,np=fe?pends(x).p.length:0,gp=gUrl(x),rt=ROT[x.id];return `<div class="rel${x.id===S.id?" cur":""}">${fe||re?`<button class="gear" type="button" data-gear="${x.id}" aria-label="Opções do processo ${esc(k)}" title="Opções do processo">&#9881;&#xFE0E;</button>`:""}<div><strong>${rt?rt.n+". ":""}Processo ${esc(k)||"sem número"}</strong> <span class="st ${df?"df":x.c.fechado==="Sim"?"rv":fe?"ok2":re?"rv":"ag"}">${df?"Deferido":x.c.fechado==="Sim"?"Imóvel fechado":fe?(hn?"Vistoriado ("+(hn+1)+"ª)":"Vistoriado"):re?"A revistoriar":"A vistoriar"}</span>${fe&&x.pl?` <span class="st pl">Pendência lançada em ${fd(x.pl)}</span>`:fe&&!df&&np?` <span class="st pn">Pendência a lançar</span>`:""}${n[k]>1?' <span class="dup">número repetido</span>':""}<div class="lbl">${x.f.data?"Vistoria "+fd(x.f.data)+" - ":""}${esc(addr(x)||"Sem endereço")}${x.f.lote?" - "+esc(x.f.lote):""}${!agr&&nm(x)?" - Analista: "+esc(nm(x)):""} - ${x.p.length} foto(s)${df?" - deferido em "+defTxt(x):""}${np?` - <span class="dup">${np} pendência(s)</span>`:""}${rt&&rt.d!=null?` - ${fmtDist(rt.d)} da parada anterior`:""}${rt&&rt.sc?" - sem coordenada (final da rota)":""}</div></div><div class="bar"><button class="btn ghost sm" data-open="${x.id}">Abrir</button>${fe?`<button class="btn sm" data-pdf="${x.id}">PDF</button>`:""}${gp?`<a class="btn ghost sm" href="${esc(gp)}" target="_blank" rel="noopener">Mapa</a>`:""}${fe&&!df&&np&&!x.pl?`<button class="btn sm" data-pl="${x.id}">Pendência lançada</button>`:""}${fe&&!df?`<button class="btn sm" data-def="${x.id}">Deferido</button>`:""}<button class="btn ghost sm" data-del="${x.id}">Excluir</button></div></div>`};
   $(box).innerHTML=ks.length?ks.map(k=>(k==="__todos"?"":`<h3 class="grp">${k==="__sem"?"Sem analista":esc(nomes[k])} <span class="lbl">(${g[k].length})</span></h3>`)+g[k].map(item).join("")).join(""):'<p class="empty">'+(view==="df"?"Nenhum processo deferido ainda.":view==="ok"?"Nenhum relatório salvo encontrado.":"Nenhum processo a vistoriar encontrado. Use “Cadastrar processo” para incluir.")+'</p>'};
  pinta("ag",vAg,"lista");pinta("ok",vOk,"lista2");pinta("df",vDf,"lista3");accPaint()}
 async function openRep(id){await flush();const x=(await dbAll()).find(r=>r.id===id);if(x){S=norm(x);cur();paint();list();tela("form")}}
@@ -643,7 +661,7 @@ function paint(){cab();gForm();tipoPaint();histPaint();
  $("photos").innerHTML=S.p.map((p,i)=>`<figure class="ph" style="margin:0"><img src="${p.src}" alt="Foto ${i+1}"><div class="b"><input class="cap" data-i="${i}" placeholder="Legenda (ex.: fachada, hidrômetro)" value="${(p.cap||"").replace(/"/g,"&quot;")}"><button class="rm" data-rm="${i}">Remover</button></div></figure>`).join("");
 }
 document.addEventListener("input",e=>{const t=e.target;
- if(t.dataset.k){S.f[t.dataset.k]=t.value;if(t.dataset.k==="proc")cab();if(t.dataset.k==="insc")gForm()}
+ if(t.dataset.k){S.f[t.dataset.k]=t.value;if(t.dataset.k==="proc")cab();if(t.dataset.k==="insc"||t.dataset.k==="maps")gForm()}
  else if(t.dataset.m){S.m[t.dataset.m]=t.value;area()}
  else if(t.dataset.i){S.p[+t.dataset.i].cap=t.value}
  else return; save()});
@@ -684,7 +702,7 @@ $("homeb").onclick=voltar;$("homeb2").onclick=voltar;
 $("listab").onclick=async()=>{await flush();tela("lista");list()};
 document.querySelectorAll("[data-acc]").forEach(b=>b.onclick=()=>{OPEN[b.dataset.acc]=!OPEN[b.dataset.acc];accSave();accPaint()});
 $("home").prepend(document.querySelector(".logos").cloneNode(true));
-const CAMP=["proc","insc","data","ana","lot","rua","numero","quadra","nlote","bairro"];
+const CAMP=["proc","insc","data","ana","lot","rua","numero","quadra","nlote","bairro","maps"];
 $("cadb").onclick=()=>{$("dl_ana").innerHTML=FIXOS.map(n=>`<option value="${esc(n)}">`).join("");$("dl_lot").innerHTML=CFG.lotes.map(z=>`<option value="${esc(z.n)}">`).join("");$("c_msg").textContent="";$("cad").hidden=false;$("cad").scrollIntoView()};
 $("c_x").onclick=()=>{$("cad").hidden=true;scrollTo(0,0)};
 $("c_add").onclick=async()=>{const v={},m=$("c_msg");CAMP.forEach(k=>v[k]=$("c_"+k).value.trim());
@@ -693,9 +711,9 @@ $("c_add").onclick=async()=>{const v={},m=$("c_msg");CAMP.forEach(k=>v[k]=$("c_"
  const all=await dbAll();
  if(all.some(x=>(x.tipo||"habite")===TIPO&&(x.f.proc||"").trim()===v.proc)&&!confirm("Já existe um processo com esse número neste tipo. Cadastrar mesmo assim?"))return;
  const cn=(l,t)=>l.find(n=>n.toLowerCase()===t.toLowerCase())||t;
- const o=blank();o.f={proc:v.proc,insc:v.insc,data:v.data,analista:cn(FIXOS,v.ana),lote:cn(CFG.lotes.map(z=>z.n),v.lot),rua:v.rua,numero:v.numero,quadra:v.quadra,nlote:v.nlote,bairro:v.bairro};
+ const o=blank();o.f={proc:v.proc,insc:v.insc,data:v.data,analista:cn(FIXOS,v.ana),lote:cn(CFG.lotes.map(z=>z.n),v.lot),rua:v.rua,numero:v.numero,quadra:v.quadra,nlote:v.nlote,bairro:v.bairro};if(v.maps)o.f.maps=v.maps;
  try{await dbPut(o)}catch(e){m.textContent="Não foi possível salvar o cadastro (espaço cheio?).";return}
- ["proc","insc","rua","numero","quadra","nlote"].forEach(k=>$("c_"+k).value="");$("c_proc").focus();
+ ["proc","insc","rua","numero","quadra","nlote","maps"].forEach(k=>$("c_"+k).value="");$("c_proc").focus();
  m.textContent="Processo "+v.proc+" cadastrado. Você pode cadastrar o próximo.";list()};
 $("fdt").onchange=list;$("agrb").onclick=()=>{AGR.ag=!AGR.ag;list()};$("agrb2").onclick=()=>{AGR.ok=!AGR.ok;list()};$("agrb3").onclick=()=>{AGR.df=!AGR.df;list()};$("fall").onclick=()=>{$("fdt").value="";list()};
 $("fhoje").onclick=()=>{const d=new Date();$("fdt").value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");list()};
