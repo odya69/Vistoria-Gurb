@@ -1,4 +1,4 @@
-const CACHE = "vistorias-v15";
+const CACHE = "vistorias-v16";
 const ARQUIVOS = [
   "./",
   "./index.html",
@@ -30,6 +30,9 @@ self.addEventListener("fetch", e => {
   const url = new URL(req.url);
   // Google (login/Drive) e outros domínios: sempre pela rede, sem cache
   if (url.origin !== location.origin) return;
+
+  // Dados grandes (GeoJSON do mapa): o app controla a atualização; não passa pelo cache do service worker
+  if (url.pathname.includes("/dados/")) return;
 
   // Navegação: rede primeiro (pega versão nova), cache como reserva offline
   if (req.mode === "navigate") {

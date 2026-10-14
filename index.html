@@ -216,8 +216,8 @@ body.prev .gear{display:none}
   <p class="lbl" style="margin:4px 0 8px" id="mpst"></p>
   <div class="bar"><button class="btn ghost sm" id="mpalt" type="button"></button></div>
   <h3 class="grp" style="margin-top:14px">Mapa (arquivo GeoJSON)</h3>
-  <p class="lbl" style="margin:4px 0 8px">Carregue um GeoJSON com os pontos e escolha o atributo que contém a inscrição imobiliária. Cada processo com a mesma inscrição ganha um link para abrir o local no mapa escolhido acima (Google Maps ou OpenStreetMap). O arquivo é lido no próprio aparelho.</p>
-  <div class="bar"><label class="btn ghost sm" style="cursor:pointer">Carregar GeoJSON<input id="gfile" type="file" accept=".geojson,.json,application/geo+json,application/json" hidden></label><button class="btn ghost sm" id="grem" hidden>Remover arquivo</button></div>
+  <p class="lbl" style="margin:4px 0 8px">Carregue um GeoJSON com os pontos e escolha o atributo que contém a inscrição imobiliária. Cada processo com a mesma inscrição ganha um link para abrir o local no mapa escolhido acima (Google Maps ou OpenStreetMap). O mapa do site (dados/inscricoes.geojson) é baixado e atualizado sozinho quando o arquivo no GitHub muda. Carregar um arquivo aqui serve para testes e vale até você tocar em “Atualizar do site agora”.</p>
+  <div class="bar"><label class="btn ghost sm" style="cursor:pointer">Carregar GeoJSON<input id="gfile" type="file" accept=".geojson,.json,application/geo+json,application/json" hidden></label><button class="btn ghost sm" id="gsite" type="button">Atualizar do site agora</button><button class="btn ghost sm" id="grem" hidden>Remover arquivo</button></div>
   <div class="f" id="gsel" hidden style="margin-top:8px;max-width:340px"><label class="lbl" for="gattr">Atributo com a inscrição imobiliária</label><select id="gattr"></select></div>
   <p class="lbl" id="gst"></p><p class="empty" id="gmsg" role="status" style="color:var(--nao)"></p>
   <div class="grid" style="margin-bottom:14px">
@@ -539,15 +539,37 @@ async function gUI(){$("grem").hidden=!GEO;$("gsel").hidden=!GEO;
  if(!GEO){$("gst").textContent="Nenhum arquivo carregado.";return}
  $("gattr").innerHTML=gKeys().map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join("");$("gattr").value=GEO.attr;
  const ex=GEO.pts.find(q=>q.p[GEO.attr]!=null);let n=0;try{n=(await dbAll()).filter(x=>gFind(x)).length}catch(e){}
- $("gst").textContent=GEO.nome+": "+GEO.pts.length+" ponto(s). Exemplo do atributo "+GEO.attr+": "+(ex?ex.p[GEO.attr]:"-")+". Processos cadastrados com ponto encontrado: "+n+"."}
+ $("gst").textContent=GEO.nome+": "+GEO.pts.length+" ponto(s). Exemplo do atributo "+GEO.attr+": "+(ex?ex.p[GEO.attr]:"-")+". Processos cadastrados com ponto encontrado: "+n+"."+(GEO.src===GEO_URL?" Fonte: arquivo do site, atualizado automaticamente.":GEO.src==="manual"?" Fonte: arquivo carregado manualmente neste aparelho.":"")}
+const GEO_URL="dados/inscricoes.geojson";
+async function gIngest(txt,nome,src,ver){const m=$("gmsg");m.textContent="";
+ const j=JSON.parse(txt),fs=j.type==="FeatureCollection"?j.features:j.type==="Feature"?[j]:[],pts=[];let bad=0;
+ fs.forEach(f=>{const c=centro(f.geometry);if(c&&Math.abs(c[0])<=180&&Math.abs(c[1])<=90)pts.push({la:+c[1].toFixed(6),lo:+c[0].toFixed(6),p:f.properties||{}});else bad++});
+ if(!pts.length){m.textContent="Nenhum ponto válido no arquivo."+(bad?" As coordenadas precisam estar em latitude e longitude (WGS 84).":"");return false}
+ const ant=GEO&&GEO.attr;GEO={id:"geo",nome,attr:"",pts,src:src||"manual",ver:ver||""};const ks=gKeys();
+ GEO.attr=(ant&&ks.includes(ant))?ant:(ks.find(k=>/insc|imob/i.test(k))||ks.find(k=>/cadast|matr|sql/i.test(k))||ks[0]||"");
+ try{await gTx("readwrite",s=>s.put(GEO))}catch(e){m.textContent="Arquivo lido, mas não coube no armazenamento deste aparelho; vale só até fechar a página."}
+ if(bad&&!m.textContent)m.textContent=bad+" item(ns) ignorado(s) por não terem coordenadas válidas.";
+ gBuild();await gUI();gForm();list();return true}
 async function gLoad(file){const m=$("gmsg");m.textContent="";
- try{const j=JSON.parse(await(file.text?file.text():new Promise((ok,no)=>{const q=new FileReader();q.onload=()=>ok(q.result);q.onerror=no;q.readAsText(file)}))),fs=j.type==="FeatureCollection"?j.features:j.type==="Feature"?[j]:[],pts=[];let bad=0;
-  fs.forEach(f=>{const c=centro(f.geometry);if(c&&Math.abs(c[0])<=180&&Math.abs(c[1])<=90)pts.push({la:+c[1].toFixed(6),lo:+c[0].toFixed(6),p:f.properties||{}});else bad++});
-  if(!pts.length){m.textContent="Nenhum ponto válido no arquivo."+(bad?" As coordenadas precisam estar em latitude e longitude (WGS 84).":"");return}
-  GEO={id:"geo",nome:file.name,attr:"",pts};const ks=gKeys();GEO.attr=ks.find(k=>/insc|imob/i.test(k))||ks.find(k=>/cadast|matr|sql/i.test(k))||ks[0]||"";
-  try{await gTx("readwrite",s=>s.put(GEO))}catch(e){m.textContent="Arquivo lido, mas não coube no armazenamento deste aparelho; vale só até fechar a página."}
-  if(bad&&!m.textContent)m.textContent=bad+" item(ns) ignorado(s) por não terem coordenadas válidas.";
-  gBuild();await gUI();gForm();list()}catch(e){m.textContent="Não foi possível ler o arquivo. Verifique se é um GeoJSON válido."}}
+ try{const txt=await(file.text?file.text():new Promise((ok,no)=>{const q=new FileReader();q.onload=()=>ok(q.result);q.onerror=no;q.readAsText(file)}));await gIngest(txt,file.name,"manual","")}
+ catch(e){m.textContent="Não foi possível ler o arquivo. Verifique se é um GeoJSON válido."}}
+/* mapa do site: baixa dados/inscricoes.geojson e só baixa de novo quando o arquivo no GitHub mudar */
+let gChk=0;
+async function gAuto(manual){
+ if(!DB||(!manual&&(navigator.onLine===false||(GEO&&GEO.src==="manual"))))return"";
+ gChk=Date.now();
+ try{
+  const h=await fetch(GEO_URL,{method:"HEAD",cache:"no-store"});
+  if(!h.ok)return manual?"O arquivo do site não foi encontrado (dados/inscricoes.geojson).":"";
+  const ver=[h.headers.get("etag"),h.headers.get("last-modified"),h.headers.get("content-length")].map(v=>v||"").join("|"),atual=GEO&&GEO.src===GEO_URL;
+  if(atual&&GEO.ver===ver&&ver!=="||")return manual?"O mapa já está na versão mais recente do site.":"";
+  if(atual&&!manual&&ver==="||")return"";
+  if(!GEO&&$("gst"))$("gst").textContent="Baixando o mapa do site...";
+  const r=await fetch(GEO_URL,{cache:"no-cache"});if(!r.ok)throw new Error("http");
+  const ok=await gIngest(await r.text(),"Inscrições (arquivo do site)",GEO_URL,ver);
+  return ok?"Mapa atualizado a partir do site.":""
+ }catch(e){gUI();return manual?"Não foi possível baixar o arquivo do site agora. Verifique a internet.":""}}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-gChk>600000)gAuto()});
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function openDB(){return new Promise((ok,no)=>{const q=indexedDB.open("relfoto_db",2);q.onupgradeneeded=()=>{const d=q.result;if(!d.objectStoreNames.contains("r"))d.createObjectStore("r",{keyPath:"id"});if(!d.objectStoreNames.contains("g"))d.createObjectStore("g",{keyPath:"id"})};q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)})}
 function tx(mode,fn){return new Promise((ok,no)=>{const t=DB.transaction("r",mode),rq=fn(t.objectStore("r"));t.oncomplete=()=>ok(rq&&rq.result);t.onerror=()=>no(t.error)})}
@@ -713,6 +735,7 @@ $("rotab").onclick=async()=>{const r=await doDia();if(!r)return;const t=rotaTxt(
 $("revb").onclick=()=>revistoriar(S.id);
 $("gfile").onchange=e=>{if(e.target.files[0])gLoad(e.target.files[0]);e.target.value=""};
 $("gattr").onchange=async()=>{GEO.attr=$("gattr").value;try{await gTx("readwrite",s=>s.put(GEO))}catch(e){}gBuild();gUI();gForm();list()};
+$("gsite").onclick=async()=>{const t=await gAuto(true),m=$("gmsg");if(t){m.textContent=t;m.style.color=/^(Mapa atualizado|O mapa já)/.test(t)?"#1d6b3a":""}};
 $("grem").onclick=async()=>{if(!confirm("Remover o arquivo GeoJSON carregado?"))return;try{await gTx("readwrite",s=>s.delete("geo"))}catch(e){}GEO=null;GIDX={};$("gmsg").textContent="";gUI();gForm();list()};
 const bm=t=>{$("bmsg").textContent=t;$("bmsg2").textContent=t};
 async function exportar(){bm("");
@@ -722,7 +745,7 @@ async function exportar(){bm("");
   let dl=null;try{dl=typeof claude!=="undefined"?await claude.use("downloads"):null}catch(x){}
   if(!dl)dl={save:async o=>baixar(o.data,o.filename)};
   const d=new Date(),dia=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-  const blob=new Blob([JSON.stringify({app:"relfoto",versao:1,exportadoEm:d.toISOString(),relatorios:rel,config:CFG,geo:GEO})],{type:"application/json"});
+  const blob=new Blob([JSON.stringify({app:"relfoto",versao:1,exportadoEm:d.toISOString(),relatorios:rel,config:CFG,geo:(GEO&&GEO.src===GEO_URL?null:GEO)})],{type:"application/json"});
   await dl.save({filename:"relatorios-vistoria-"+dia+".json",data:blob});
   bm(rel.length+" relatório(s) exportado(s).")}
  catch(e){bm(e&&e.code==="declined"?"Exportação cancelada.":e&&e.code==="too_large"?"O arquivo ficou grande demais para salvar de uma vez.":"Não foi possível exportar.")}}
@@ -753,7 +776,7 @@ async function exportar(){const m=$("bmsg");m.textContent="";await flush();
  if(!DB){m.textContent="Este navegador não permite acessar os relatórios.";return}
  let a=[];try{a=await dbAll()}catch(e){m.textContent="Não foi possível ler os relatórios.";return}
  if(!a.length){m.textContent="Não há relatórios para exportar.";return}
- const parts=['{"app":"relatorio-fotografico","versao":1,"exportadoEm":'+JSON.stringify(new Date().toISOString())+',"config":'+JSON.stringify(CFG)+',"geo":'+JSON.stringify(GEO||null)+',"relatorios":['];
+ const parts=['{"app":"relatorio-fotografico","versao":1,"exportadoEm":'+JSON.stringify(new Date().toISOString())+',"config":'+JSON.stringify(CFG)+',"geo":'+JSON.stringify(GEO&&GEO.src===GEO_URL?null:(GEO||null))+',"relatorios":['];
  a.forEach((x,i)=>parts.push((i?",":"")+JSON.stringify(x)));parts.push("]}");
  const d=new Date(),dia=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
  try{await salvarArquivo(new Blob(parts,{type:"application/json"}),"Backup-relatorios-"+dia+".json");m.textContent=a.length+" relatório(s) incluído(s) no arquivo de backup."}
@@ -788,7 +811,7 @@ build();
  if(DB){try{const o=localStorage.getItem("relfoto");if(o){await dbPut(Object.assign(blank(),JSON.parse(o)));localStorage.removeItem("relfoto")}}catch(e){}
 }
  if(DB){try{GEO=(await gTx("readonly",s=>s.get("geo")))||null;gBuild()}catch(e){}}
- paint();list();storUI()})();
+ paint();list();storUI();gAuto()})();
 </script>
 <script src="drive-config.js"></script>
 <script src="shared-config.js"></script>
@@ -942,7 +965,7 @@ async function enviarBackup(){
     if(!rel.length){msg("Não há relatórios salvos para enviar.");return}
     msg("Enviando backup completo...",true);
     const raiz=await pastaRaiz();
-    const dados={app:"relfoto",versao:1,exportadoEm:new Date().toISOString(),relatorios:rel,config:CFG,geo:typeof GEO!=="undefined"?GEO:null};
+    const dados={app:"relfoto",versao:1,exportadoEm:new Date().toISOString(),relatorios:rel,config:CFG,geo:(typeof GEO!=="undefined"&&GEO&&GEO.src!==GEO_URL)?GEO:null};
     await enviarArquivo("backup-completo-"+dia()+".json",new Blob([JSON.stringify(dados)],{type:"application/json"}),raiz);
     msg("Backup enviado ao Drive ("+rel.length+" relatório(s)).",true);
   }catch(e){erro(e)}
