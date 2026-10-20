@@ -374,7 +374,7 @@ body.prev .gear{display:none}
  <section id="sitf">
   <h2>Situação do imóvel</h2>
   <div class="row"><span>O imóvel está fechado?</span><div class="tri" role="group" aria-label="O imóvel está fechado?"><button class="n" data-c="fechado" data-v="Sim">Sim</button><button class="s" data-c="fechado" data-v="Não">Não</button></div></div>
-  <div class="row"><span>O imóvel não foi localizado? <span class="lbl">(endereço não encontrado)</span></span><div class="tri" role="group" aria-label="O imóvel não foi localizado?"><button class="n" data-c="naoloc" data-v="Sim">Sim</button><button class="s" data-c="naoloc" data-v="Não">Não</button></div></div>
+  <div class="row"><span>O imóvel foi localizado?</span><div class="tri" role="group" aria-label="O imóvel foi localizado?"><button class="s" data-c="naoloc" data-v="Não">Sim</button><button class="n" data-c="naoloc" data-v="Sim">Não</button></div></div>
   <div class="row"><span>O imóvel possui pendência?</span><div class="tri" role="group" aria-label="O imóvel possui pendência?"><button class="n" data-c="pend" data-v="Sim">Sim</button><button class="s" data-c="pend" data-v="Não">Não</button></div></div>
  </section>
 
@@ -420,7 +420,7 @@ function pends(x){const p=[],av=[];
  return{p,av,ans}}
 function pend(){const{p,av,ans}=pends(S);$("pc").textContent=ans?p.length+" pendência(s)":"";
  $("pl").innerHTML=p.length?"<ul>"+p.map(t=>`<li>${esc(t)}</li>`).join("")+"</ul>":(ans?'<p class="ok">Nenhuma pendência encontrada nos itens conferidos.</p>':'<p class="empty">Preencha as condições e as medidas para conferir as pendências.</p>');
- $("pa").innerHTML=(S.c.fechado==="Sim"?'<p class="dup" style="font-size:.95rem">O imóvel estava fechado.</p>':"")+(S.c.naoloc==="Sim"?'<p class="dup" style="font-size:.95rem">Imóvel não localizado: a vistoria não pôde ser realizada.</p>':"")+av.map(t=>`<p class="empty">${esc(t)}</p>`).join("")}
+ $("pa").innerHTML=(S.c.fechado==="Sim"?'<p class="dup" style="font-size:.95rem">O imóvel estava fechado.</p>':"")+(S.c.naoloc==="Sim"?'<p class="dup" style="font-size:.95rem">O imóvel não foi localizado.</p>':"")+av.map(t=>`<p class="empty">${esc(t)}</p>`).join("")}
 const TIPOS={habite:"Habite-se",regul:"Auto de regularização",acess:"Acessibilidade"};
 const addr=x=>[x.f.rua,x.f.numero&&"nº "+x.f.numero,x.f.quadra&&"Quadra "+x.f.quadra,x.f.nlote&&"Lote "+x.f.nlote,x.f.bairro].filter(Boolean).join(", ")||x.f.end||"";
 function norm(o){if(o.f.end&&!o.f.rua)o.f.rua=o.f.end;delete o.f.end;prefill(o);if(typeof rdPre==="function")rdPre(o);return o}
@@ -445,15 +445,18 @@ const sitTxt=c=>[c.fechado==="Sim"&&"O imóvel estava fechado",c.naoloc==="Sim"&
 function snapHTML(h){const rows=[],cs=CHECKS.filter(([k])=>h.c[k]).map(([k,t])=>t.replace(/ \(.*\)/,"")+": "+h.c[k]);
  const ms=MEDS.concat([["arvL","Caixa de árvore - largura"],["arvC","Caixa de árvore - comprimento"]]).filter(([k])=>String(h.m[k]||"").trim()).map(([k,t])=>t+": "+fmt(num(h.m[k]))+" m");
  return `<h3 class="grp">${h.n}ª vistoria${h.data?" - "+fd(h.data):""}</h3>
+ <p class="lbl" style="margin:6px 0"><strong>Responsável pela vistoria:</strong> ${esc(h.resp||"não informado")}</p>
  <p style="margin:6px 0"><strong>Pendências encontradas:</strong> ${h.pend.length?"":"nenhuma"}</p>${h.pend.length?"<ul>"+h.pend.map(t=>`<li>${esc(t)}</li>`).join("")+"</ul>":""}
  ${sitTxt(h.c)?`<p class="lbl">Situação: ${esc(sitTxt(h.c))}</p>`:""}${cs.length?`<p class="lbl">Condições: ${esc(cs.join("; "))}</p>`:""}${ms.length?`<p class="lbl">Medidas: ${esc(ms.join("; "))}</p>`:""}${h.obs?`<p class="lbl">Observações: ${esc(h.obs)}</p>`:""}
  ${h.p.length?`<div class="photos">${h.p.map((f,i)=>`<figure class="ph" style="margin:0"><img src="${f.src}" alt="Foto ${i+1} da ${h.n}ª vistoria"><div class="b"><span class="cap">${esc(f.cap||"")}</span></div></figure>`).join("")}</div>`:""}`}
-function histPaint(){const h=S.hist||[];$("hsec").hidden=!h.length;$("hist").innerHTML=h.map(snapHTML).join("");rvPaint()}
+function histPaint(){const h=S.hist||[];$("hsec").hidden=!h.length;
+ const lin=h.map(z=>`<li>${z.n}ª vistoria${z.data?" - "+fd(z.data):""}: ${esc(z.resp||"responsável não informado")}</li>`).concat(`<li>${h.length+1}ª vistoria (atual)${S.f.data?" - "+fd(S.f.data):""}: ${esc((S.f.resp||"").trim()||"responsável não informado")}</li>`);
+ $("hist").innerHTML=`<h3 class="grp">Responsáveis por vistoria</h3><ul id="hresp" style="margin:6px 0 12px">${lin.join("")}</ul>`+h.map(snapHTML).join("");rvPaint()}
 function rvPaint(){const h=S.hist||[],b=bRev(S);$("rvinfo").hidden=!h.length;if(!h.length)return;
  $("rvtx").textContent=b?"Revistoria ("+(h.length+1)+"ª vistoria): as condições e as medidas partem da vistoria "+(b.data?"de "+fd(b.data):"nº "+b.n)+". Confira e altere só o que mudou. Fotos e observações começam vazias.":"Revistoria ("+(h.length+1)+"ª vistoria): a vistoria anterior não tem condições nem medidas para copiar.";
  $("rvrec").hidden=$("rvlim").hidden=!b}
 function tipoPaint(){const n=(S.hist||[]).length;$("tipoL").textContent=TIPO?"Tipo de processo: "+TIPOS[TIPO]+(n?" - "+(n+1)+"ª vistoria (revistoria)":""):""}
-function arquivar(o){o.hist=(o.hist||[]).concat({n:(o.hist||[]).length+1,data:o.f.data||"",c:o.c,m:o.m,p:o.p,obs:o.f.obs||"",pend:pends(o).p,t:Date.now(),def:o.def||0,pl:o.pl||""});delete o.def;delete o.pl;o.c={};o.m={};o.p=[];o.f.obs=""}
+function arquivar(o){o.hist=(o.hist||[]).concat({n:(o.hist||[]).length+1,data:o.f.data||"",c:o.c,m:o.m,p:o.p,obs:o.f.obs||"",resp:(o.f.resp||"").trim(),pend:pends(o).p,t:Date.now(),def:o.def||0,pl:o.pl||""});delete o.def;delete o.pl;o.c={};o.m={};o.p=[];o.f.obs=""}
 function pedirData(){return new Promise(res=>{const m=$("rvm"),d=$("rvd");d.value="";m.hidden=false;d.focus();try{d.showPicker()}catch(e){}
  const fim=v=>{m.hidden=true;$("rvok").onclick=null;$("rvno").onclick=null;res(v)};
  $("rvok").onclick=()=>fim(d.value);$("rvno").onclick=()=>fim(null)})}
@@ -474,7 +477,7 @@ async function marcarDef(id,on){await flush();const o=(await dbAll()).find(x=>x.
 async function tirarRevistoria(id){await flush();const o=(await dbAll()).find(x=>x.id===id);
  if(!o||feito(o)||!(o.hist||[]).length){alert("Este processo não está marcado para revistoria.");return}
  if(!confirm("Tirar este processo da revistoria? A vistoria anterior volta a valer e ele sai da rota de vistorias."))return;
- const h=o.hist[o.hist.length-1];o.hist=o.hist.slice(0,-1);o.c=h.c||{};o.m=h.m||{};o.p=h.p||[];o.f.obs=h.obs||"";o.f.data=h.data||"";
+ const h=o.hist[o.hist.length-1];o.hist=o.hist.slice(0,-1);o.c=h.c||{};o.m=h.m||{};o.p=h.p||[];o.f.obs=h.obs||"";o.f.data=h.data||"";o.f.resp=h.resp||"";
  if(h.def)o.def=h.def;else delete o.def;if(h.pl)o.pl=h.pl;else delete o.pl;
  o.t=Date.now();
  try{await dbPut(o)}catch(e){alert("Não foi possível salvar (espaço cheio?).");return}
@@ -688,7 +691,7 @@ function paint(){cab();gForm();tipoPaint();histPaint();
  $("photos").innerHTML=S.p.map((p,i)=>`<figure class="ph" style="margin:0"><img src="${p.src}" alt="Foto ${i+1}"><div class="b"><input class="cap" data-i="${i}" placeholder="Legenda (ex.: fachada, hidrômetro)" value="${(p.cap||"").replace(/"/g,"&quot;")}"><button class="rm" data-rm="${i}">Remover</button></div></figure>`).join("");
 }
 document.addEventListener("input",e=>{const t=e.target;
- if(t.dataset.k){S.f[t.dataset.k]=t.value;if(t.dataset.k==="proc")cab();if(t.dataset.k==="data"&&RD[t.value]){S.f.resp=RD[t.value];$("resp").value=S.f.resp}if(t.dataset.k==="insc"||t.dataset.k==="maps")gForm()}
+ if(t.dataset.k){S.f[t.dataset.k]=t.value;if(t.dataset.k==="proc")cab();if((t.dataset.k==="resp"||t.dataset.k==="data")&&(S.hist||[]).length)setTimeout(histPaint,0);if(t.dataset.k==="data"&&RD[t.value]){S.f.resp=RD[t.value];$("resp").value=S.f.resp}if(t.dataset.k==="insc"||t.dataset.k==="maps")gForm()}
  else if(t.dataset.m){S.m[t.dataset.m]=t.value;area()}
  else if(t.dataset.i){S.p[+t.dataset.i].cap=t.value}
  else return; save()});
