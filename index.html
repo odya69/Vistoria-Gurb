@@ -262,13 +262,16 @@ body.prev .gear{display:none}
    <div class="accb" id="accb_fl" hidden>
   <div class="bar"><button class="btn" id="cadb">Cadastrar processo</button><button class="btn ghost" id="novo">Novo relatório</button><select id="fan" aria-label="Filtrar por analista" style="width:auto;min-width:190px"></select><input id="busca" placeholder="Buscar por nº do processo ou endereço" aria-label="Buscar relatório" style="flex:1;min-width:200px"></div>
   <div class="bar" style="margin-top:8px;align-items:center"><input id="fdt" type="date" aria-label="Filtrar por data da vistoria" style="width:auto"><button class="btn ghost sm" id="fhoje">Hoje</button><button class="btn ghost sm" id="fall">Todas as datas</button></div>
+  <div class="bar" style="margin-top:8px;align-items:center"><input id="respdia" placeholder="Responsável pela vistoria do dia" aria-label="Responsável pela vistoria do dia" autocomplete="off" style="flex:1;min-width:200px"><button class="btn sm" id="respdiab" type="button">Preencher o dia</button></div>
+  <p class="lbl" style="margin:6px 0 0">Escolha a data acima, digite o responsável e toque em “Preencher o dia”: o nome entra em todos os processos daquela data e já vem preenchido nos próximos que forem cadastrados ou tiverem essa data. Em cada processo ainda dá para trocar.</p>
+  <p class="empty" id="respdiam" role="status"></p>
    </div>
   </div>
   <div class="acc">
    <button type="button" class="acch" id="acch_ag" data-acc="ag" aria-expanded="true" aria-controls="accb_ag"><span>A vistoriar <span class="n" id="nag"></span></span><span class="chev" aria-hidden="true">&#9662;</span></button>
    <div class="accb" id="accb_ag">
     <div class="bar" style="align-items:center"><button class="btn ghost sm" id="agrb" type="button">Ver por analista</button><button class="btn ghost sm" id="rotab">Copiar rota (texto p/ WhatsApp)</button></div>
-    <p class="lbl" style="margin:6px 0 0">Para copiar a rota, escolha a data em “Filtros e ações”. O botão copia os processos a vistoriar nessa data, numa ordem só (e só do analista filtrado, se você escolher um).</p>
+    <p class="lbl" style="margin:6px 0 0">Um toque em “Copiar rota” copia todos os processos desta lista, já na ordem da rota, sem escolher data. Se quiser só um dia ou só um analista, selecione em “Filtros e ações” antes de copiar.</p>
     <p class="empty" id="dmsgd" role="status"></p>
     <div id="lista"></div>
    </div>
@@ -370,7 +373,7 @@ body.prev .gear{display:none}
 
  <section id="sitf">
   <h2>Situação do imóvel</h2>
-  <div class="row"><span>O imóvel está fechado? <span class="lbl">(não foi possível vistoriar)</span></span><div class="tri" role="group" aria-label="O imóvel está fechado?"><button class="n" data-c="fechado" data-v="Sim">Sim</button><button class="s" data-c="fechado" data-v="Não">Não</button></div></div>
+  <div class="row"><span>O imóvel está fechado?</span><div class="tri" role="group" aria-label="O imóvel está fechado?"><button class="n" data-c="fechado" data-v="Sim">Sim</button><button class="s" data-c="fechado" data-v="Não">Não</button></div></div>
   <div class="row"><span>O imóvel não foi localizado? <span class="lbl">(endereço não encontrado)</span></span><div class="tri" role="group" aria-label="O imóvel não foi localizado?"><button class="n" data-c="naoloc" data-v="Sim">Sim</button><button class="s" data-c="naoloc" data-v="Não">Não</button></div></div>
   <div class="row"><span>O imóvel possui pendência?</span><div class="tri" role="group" aria-label="O imóvel possui pendência?"><button class="n" data-c="pend" data-v="Sim">Sim</button><button class="s" data-c="pend" data-v="Não">Não</button></div></div>
  </section>
@@ -417,10 +420,10 @@ function pends(x){const p=[],av=[];
  return{p,av,ans}}
 function pend(){const{p,av,ans}=pends(S);$("pc").textContent=ans?p.length+" pendência(s)":"";
  $("pl").innerHTML=p.length?"<ul>"+p.map(t=>`<li>${esc(t)}</li>`).join("")+"</ul>":(ans?'<p class="ok">Nenhuma pendência encontrada nos itens conferidos.</p>':'<p class="empty">Preencha as condições e as medidas para conferir as pendências.</p>');
- $("pa").innerHTML=(S.c.fechado==="Sim"?'<p class="dup" style="font-size:.95rem">Imóvel fechado: a vistoria não pôde ser realizada.</p>':"")+(S.c.naoloc==="Sim"?'<p class="dup" style="font-size:.95rem">Imóvel não localizado: a vistoria não pôde ser realizada.</p>':"")+av.map(t=>`<p class="empty">${esc(t)}</p>`).join("")}
+ $("pa").innerHTML=(S.c.fechado==="Sim"?'<p class="dup" style="font-size:.95rem">O imóvel estava fechado.</p>':"")+(S.c.naoloc==="Sim"?'<p class="dup" style="font-size:.95rem">Imóvel não localizado: a vistoria não pôde ser realizada.</p>':"")+av.map(t=>`<p class="empty">${esc(t)}</p>`).join("")}
 const TIPOS={habite:"Habite-se",regul:"Auto de regularização",acess:"Acessibilidade"};
 const addr=x=>[x.f.rua,x.f.numero&&"nº "+x.f.numero,x.f.quadra&&"Quadra "+x.f.quadra,x.f.nlote&&"Lote "+x.f.nlote,x.f.bairro].filter(Boolean).join(", ")||x.f.end||"";
-function norm(o){if(o.f.end&&!o.f.rua)o.f.rua=o.f.end;delete o.f.end;prefill(o);return o}
+function norm(o){if(o.f.end&&!o.f.rua)o.f.rua=o.f.end;delete o.f.end;prefill(o);if(typeof rdPre==="function")rdPre(o);return o}
 /* Revistoria: condições e medidas partem da última vistoria que tenha esses dados (fotos e observações começam vazias).
    O preenchimento só existe na tela até alguém mexer; enquanto nada mudou, o processo continua "A revistoriar". */
 const SIT=["fechado","pend","naoloc"];
@@ -438,7 +441,7 @@ function prefill(o){if(!(o.hist||[]).length||o.conf||(o.p||[]).length||!vz(o.f.o
  const b=bRev(o);if(!b)return;o.c=Object.assign({},b.c);o.m=Object.assign({},b.m)}
 const feito=x=>!soPre(x)&&(x.p.length>0||Object.values(x.c).some(Boolean)||Object.values(x.m).some(v=>String(v).trim()!==""));
 const fd=d=>d?d.split("-").reverse().join("/"):"";
-const sitTxt=c=>[c.fechado==="Sim"&&"Imóvel fechado",c.naoloc==="Sim"&&"Imóvel não localizado",c.pend&&"Possui pendência: "+c.pend].filter(Boolean).join("; ");
+const sitTxt=c=>[c.fechado==="Sim"&&"O imóvel estava fechado",c.naoloc==="Sim"&&"Imóvel não localizado",c.pend&&"Possui pendência: "+c.pend].filter(Boolean).join("; ");
 function snapHTML(h){const rows=[],cs=CHECKS.filter(([k])=>h.c[k]).map(([k,t])=>t.replace(/ \(.*\)/,"")+": "+h.c[k]);
  const ms=MEDS.concat([["arvL","Caixa de árvore - largura"],["arvC","Caixa de árvore - comprimento"]]).filter(([k])=>String(h.m[k]||"").trim()).map(([k,t])=>t+": "+fmt(num(h.m[k]))+" m");
  return `<h3 class="grp">${h.n}ª vistoria${h.data?" - "+fd(h.data):""}</h3>
@@ -457,7 +460,7 @@ function pedirData(){return new Promise(res=>{const m=$("rvm"),d=$("rvd");d.valu
 async function revistoriar(id){await flush();const o=(await dbAll()).find(x=>x.id===id);
  if(!o||!feito(o)){alert("Este processo ainda não tem uma vistoria preenchida para arquivar.");return}
  const iso=await pedirData();if(iso===null)return;
- arquivar(o);o.f.data=iso;o.t=Date.now();
+ arquivar(o);o.f.data=iso;o.f.resp=RD[iso]||"";o.t=Date.now();
  try{await dbPut(o)}catch(e){alert("Não foi possível salvar (espaço cheio?).");return}
  if(S.id===id){S=o;paint()}if(emForm()){OPEN.ag=true;accSave();tela("lista")}list()}
 async function marcarDef(id,on){await flush();const o=(await dbAll()).find(x=>x.id===id);if(!o)return;
@@ -619,6 +622,7 @@ function cur(){try{localStorage.setItem("relfoto_cur",S.id)}catch(e){}}
 async function flush(){clearTimeout(timer);if(!dirty)return;if(!DB){$("msg").textContent="Este navegador não permite salvar os relatórios. Gere o PDF antes de sair.";return}
  try{dirty=false;S.t=Date.now();await dbPut(S);cur();$("msg").textContent="";await list()}catch(e){dirty=true;$("msg").textContent="Não foi possível salvar (espaço cheio?). Gere o PDF e exclua relatórios antigos."}}
 async function list(){let a=[];try{a=DB?await dbAll():[]}catch(e){}
+ {let l=0;a.forEach(x=>{const d=x.f&&x.f.data,r=((x.f&&x.f.resp)||"").trim();if(d&&r&&!RD[d]){RD[d]=r;l=1}});if(l)rdSave()}
  a=a.filter(x=>(x.tipo||"habite")===TIPO);
  const nm=x=>(x.f.analista||"").trim(),key=x=>nm(x).toLowerCase(),nomes={};
  FIXOS.forEach(n=>nomes[n.toLowerCase()]=n);
@@ -684,7 +688,7 @@ function paint(){cab();gForm();tipoPaint();histPaint();
  $("photos").innerHTML=S.p.map((p,i)=>`<figure class="ph" style="margin:0"><img src="${p.src}" alt="Foto ${i+1}"><div class="b"><input class="cap" data-i="${i}" placeholder="Legenda (ex.: fachada, hidrômetro)" value="${(p.cap||"").replace(/"/g,"&quot;")}"><button class="rm" data-rm="${i}">Remover</button></div></figure>`).join("");
 }
 document.addEventListener("input",e=>{const t=e.target;
- if(t.dataset.k){S.f[t.dataset.k]=t.value;if(t.dataset.k==="proc")cab();if(t.dataset.k==="insc"||t.dataset.k==="maps")gForm()}
+ if(t.dataset.k){S.f[t.dataset.k]=t.value;if(t.dataset.k==="proc")cab();if(t.dataset.k==="data"&&RD[t.value]){S.f.resp=RD[t.value];$("resp").value=S.f.resp}if(t.dataset.k==="insc"||t.dataset.k==="maps")gForm()}
  else if(t.dataset.m){S.m[t.dataset.m]=t.value;area()}
  else if(t.dataset.i){S.p[+t.dataset.i].cap=t.value}
  else return; save()});
@@ -736,24 +740,43 @@ $("c_add").onclick=async()=>{const v={},m=$("c_msg");CAMP.forEach(k=>v[k]=$("c_"
  const all=await dbAll();
  if(all.some(x=>(x.tipo||"habite")===TIPO&&(x.f.proc||"").trim()===v.proc)&&!confirm("Já existe um processo com esse número neste tipo. Cadastrar mesmo assim?"))return;
  const cn=(l,t)=>l.find(n=>n.toLowerCase()===t.toLowerCase())||t;
- const o=blank();o.f={proc:v.proc,insc:v.insc,data:v.data,analista:cn(FIXOS,v.ana),lote:cn(CFG.lotes.map(z=>z.n),v.lot),rua:v.rua,numero:v.numero,quadra:v.quadra,nlote:v.nlote,bairro:v.bairro};if(v.maps)o.f.maps=v.maps;
+ const o=blank();o.f={proc:v.proc,insc:v.insc,data:v.data,analista:cn(FIXOS,v.ana),lote:cn(CFG.lotes.map(z=>z.n),v.lot),rua:v.rua,numero:v.numero,quadra:v.quadra,nlote:v.nlote,bairro:v.bairro};if(v.maps)o.f.maps=v.maps;rdPre(o);
  try{await dbPut(o)}catch(e){m.textContent="Não foi possível salvar o cadastro (espaço cheio?).";return}
  ["proc","insc","rua","numero","quadra","nlote","maps"].forEach(k=>$("c_"+k).value="");$("c_proc").focus();
  m.textContent="Processo "+v.proc+" cadastrado. Você pode cadastrar o próximo.";list()};
-$("fdt").onchange=list;$("agrb").onclick=()=>{AGR.ag=!AGR.ag;list()};$("agrb2").onclick=()=>{AGR.ok=!AGR.ok;list()};$("agrb3").onclick=()=>{AGR.df=!AGR.df;list()};$("fall").onclick=()=>{$("fdt").value="";list()};
-$("fhoje").onclick=()=>{const d=new Date();$("fdt").value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");list()};
+$("fdt").onchange=()=>{rdPaint();list()};$("agrb").onclick=()=>{AGR.ag=!AGR.ag;list()};$("agrb2").onclick=()=>{AGR.ok=!AGR.ok;list()};$("agrb3").onclick=()=>{AGR.df=!AGR.df;list()};$("fall").onclick=()=>{$("fdt").value="";rdPaint();list()};
+$("fhoje").onclick=()=>{const d=new Date();$("fdt").value=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");rdPaint();list()};
 
+/* ===== Responsável pela vistoria, por dia ===== */
+let RD={};try{RD=JSON.parse(localStorage.getItem("relfoto_respdia")||"{}")||{}}catch(e){}
+const rdSave=()=>{try{localStorage.setItem("relfoto_respdia",JSON.stringify(RD))}catch(e){}};
+const rdMsg=t=>{$("respdiam").textContent=t||""};
+function rdPaint(){const d=$("fdt").value;$("respdia").value=d?(RD[d]||""):"";$("respdia").disabled=!d;$("respdiab").disabled=!d;rdMsg(d?"":"Escolha a data da vistoria (ou toque em Hoje) para definir o responsável do dia.")}
+function rdPre(o){const d=o&&o.f&&o.f.data;if(d&&RD[d]&&!(o.f.resp||"").trim())o.f.resp=RD[d]}
+async function rdAplicar(){
+ const d=$("fdt").value,n=$("respdia").value.trim();
+ if(!d){rdMsg("Escolha a data da vistoria (ou toque em Hoje) para definir o responsável do dia.");return}
+ if(!n){rdMsg("Digite o nome do responsável pela vistoria.");return}
+ if(!DB){rdMsg("Este navegador não permite acessar os relatórios salvos.");return}
+ await flush();RD[d]=n;rdSave();let tot=0,mud=0;
+ try{for(const x of await dbAll()){if(x.f.data!==d)continue;tot++;if((x.f.resp||"")===n)continue;
+   x.f.resp=n;x.t=Date.now();await dbPut(x);mud++;if(x.id===S.id){S=x;paint()}}}
+ catch(e){rdMsg("Não foi possível salvar em todos os processos (espaço cheio?).");return}
+ rdMsg(tot?"Responsável de "+fd(d)+": "+n+" ("+tot+" processo(s) preenchido(s)).":"Responsável de "+fd(d)+" guardado: "+n+". Não há processos com essa data ainda; os próximos já virão preenchidos.");
+ if(mud)list()}
+$("respdiab").onclick=rdAplicar;
+$("respdia").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();rdAplicar()}};
+$("respdia").onchange=rdAplicar;
+rdPaint();
 /* ===== PDF de todos os relatórios de uma data + rota em texto ===== */
 const dmsg=t=>{$("dmsgd").textContent=t||""};
-async function doDia(){
+async function doRota(){
  await flush();dmsg("");
- const d=$("fdt").value;
- if(!d){OPEN.fl=true;accSave();accPaint();dmsg("Escolha a data da vistoria no filtro de data (ou toque em Hoje).");return null}
  if(!DB){dmsg("Este navegador não permite acessar os relatórios salvos.");return null}
- const an=$("fan").value,ky=x=>(x.f.analista||"").trim().toLowerCase();
+ const d=$("fdt").value,an=$("fan").value,ky=x=>(x.f.analista||"").trim().toLowerCase();
  let a=[];try{a=await dbAll()}catch(e){dmsg("Não foi possível ler os relatórios.");return null}
- a=a.filter(x=>(x.tipo||"habite")===TIPO&&!feito(x)&&x.f.data===d&&(!an||(an==="__sem"?!ky(x):ky(x)===an))).sort((x,y)=>(x.t||0)-(y.t||0));a=rotaOrdem(a,{});
- if(!a.length){dmsg("Nenhum processo a vistoriar em "+fd(d)+(an?" para o analista filtrado":"")+".");return null}
+ a=a.filter(x=>(x.tipo||"habite")===TIPO&&!feito(x)&&(!d||x.f.data===d)&&(!an||(an==="__sem"?!ky(x):ky(x)===an)));a=rotaOrdem(a,{});
+ if(!a.length){dmsg("Nenhum processo a vistoriar"+(d?" em "+fd(d):"")+(an?" para o analista filtrado":"")+".");return null}
  return{d,a,an}}
 /* PDF direto da lista: abre o processo no formulário e aciona o mesmo "Gerar relatório (imprimir / PDF)" */
 async function pdfUm(id){dmsg("");
@@ -761,19 +784,25 @@ async function pdfUm(id){dmsg("");
   if(S.id!==id){dmsg("Não foi possível ler este relatório.");return}
   try{await Promise.all([...document.querySelectorAll("#photos img")].map(im=>im.decode?im.decode().catch(()=>{}):0))}catch(e){}
   $("print").click()}
-function rotaTxt(r){const L=["*ROTA DE VISTORIAS - "+fd(r.d)+"*",TIPOS[TIPO]+" - "+r.a.length+" imóvel(is)"];
+function rotaTxt(r){const L=["*ROTA DE VISTORIAS"+(r.d?" - "+fd(r.d):"")+"*",TIPOS[TIPO]+" - "+r.a.length+" imóvel(is)"];
  if(r.an&&r.an!=="__sem"){const x=r.a.find(z=>(z.f.analista||"").trim().toLowerCase()===r.an);if(x)L.push("Analista: "+x.f.analista.trim())}
- r.a.forEach((x,i)=>{const f=x.f,pr=pends(x).p.length,fch=x.c.fechado==="Sim",tg=[];
-  if(fch)tg.push("🔒 Imóvel fechado");if(x.c.naoloc==="Sim")tg.push("🔍 Imóvel não localizado");if(x.c.pend==="Sim"||pr)tg.push("⚠️ Com pendência"+(pr?" ("+pr+")":""));
-  L.push("","*"+(i+1)+") Processo "+((f.proc||"").trim()||"sem número")+"*");
+ const resp=d=>{const x=r.a.find(z=>(z.f.data||"")===d&&(z.f.resp||"").trim());return x?x.f.resp.trim():""};
+ let dia=null,n=0;
+ r.a.forEach(x=>{const f=x.f,dd=f.data||"",pr=pends(x).p.length,fch=x.c.fechado==="Sim",tg=[];
+  if(dd!==dia){dia=dd;n=0;const rs=resp(dd);
+   if(r.d){if(rs)L.push("Responsável: "+rs)}
+   else L.push("","📅 *"+(dd?fd(dd):"Sem data")+"*"+(rs?" - Responsável: "+rs:""))}
+  n++;
+  if(fch)tg.push("🔒 O imóvel estava fechado");if(x.c.naoloc==="Sim")tg.push("🔍 Imóvel não localizado");if(x.c.pend==="Sim"||pr)tg.push("⚠️ Com pendência"+(pr?" ("+pr+")":""));
+  L.push("","*"+n+") Processo "+((f.proc||"").trim()||"sem número")+"*");
   const e=addr(x);if(e)L.push("📍 "+e);
   if(f.lote)L.push("Loteamento: "+f.lote);
-  if(tg.length)L.push(tg.join(" | "));});
+  if(tg.length)L.push(tg.join(" | "))});
  return L.join("\n")}
 async function copiar(t){try{await navigator.clipboard.writeText(t);return true}catch(e){}
  try{const ta=document.createElement("textarea");ta.value=t;ta.setAttribute("readonly","");ta.style.cssText="position:fixed;top:0;left:0;opacity:0";document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,t.length);const ok=document.execCommand("copy");ta.remove();return ok}catch(e){return false}}
-$("rotab").onclick=async()=>{const r=await doDia();if(!r)return;const t=rotaTxt(r);
- if(await copiar(t))dmsg("Rota de "+fd(r.d)+" copiada ("+r.a.length+" imóvel(is)). É só colar no WhatsApp.");
+$("rotab").onclick=async()=>{const r=await doRota();if(!r)return;const t=rotaTxt(r);
+ if(await copiar(t))dmsg("Rota copiada"+(r.d?" de "+fd(r.d):" (todas as datas)")+": "+r.a.length+" imóvel(is). É só colar no WhatsApp.");
  else{dmsg("Não foi possível copiar sozinho. Copie o texto na janela que abriu.");prompt("Copie o texto da rota:",t)}};
 $("revb").onclick=()=>revistoriar(S.id);
 $("rvrec").onclick=()=>{const b=bRev(S);if(!b)return;if(!confirm("Trazer de novo as condições e medidas da última vistoria? O que está preenchido nesses campos será substituído."))return;
