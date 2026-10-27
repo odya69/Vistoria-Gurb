@@ -155,6 +155,7 @@ body.prev .gear{display:none}
 .st.df{background:#1d6b3a;color:#fff}
 .st.pl{background:#fff3e0;color:#b45309;border:1px solid #b45309}
 .st.pn{background:#fdecea;color:#a63d2f;border:1px solid #a63d2f}
+.st.tp{background:#eef1f6;color:#33415c;border:1px solid #33415c}
 #gmb button{width:100%;text-align:left;margin-top:8px}
 .acc{margin-top:14px}
 .acch{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:52px;padding:12px 14px;border:2px solid var(--acc);background:var(--acc);color:#fff;border-radius:6px;font:700 1.05rem "Trebuchet MS",Verdana,system-ui,sans-serif;cursor:pointer;text-align:left}
@@ -174,8 +175,8 @@ body.prev .gear{display:none}
 <div id="pvbar" class="pvbar" hidden><span class="lbl">Pré-visualização do PDF</span><button class="btn ghost sm" id="pvx">Voltar a editar</button><button class="btn sm" id="pvp">Gerar PDF</button></div>
 <div id="home" class="home">
  <h1>Relatório fotográfico</h1>
-  <p class="sub">Escolha o tipo de processo</p>
- <div class="tipos"><button class="tipo" data-t="habite">Habite-se</button><button class="tipo" data-t="regul">Auto de regularização</button><button class="tipo" data-t="acess">Acessibilidade</button></div>
+  <p class="sub">Habite-se, Auto de regularização e Acessibilidade na mesma lista</p>
+ <div class="tipos"><button class="tipo" id="entrar">Vistorias</button></div>
  <div class="bar" style="justify-content:center;margin-top:26px"><button class="btn ghost sm" id="bexp2">Exportar relatórios</button><label class="btn ghost sm" style="cursor:pointer">Importar relatórios<input id="bimp2" type="file" accept=".json,application/json" hidden></label></div>
  <p class="empty" id="bmsg2" role="status" style="text-align:center"></p>
  <div id="stbox" class="mini noprint" style="width:100%">
@@ -228,8 +229,8 @@ body.prev .gear{display:none}
   <div class="f" id="gsel" hidden style="margin-top:8px;max-width:340px"><label class="lbl" for="gattr">Atributo com a inscrição imobiliária</label><select id="gattr"></select></div>
   <p class="lbl" id="gst"></p><p class="empty" id="gmsg" role="status" style="color:var(--nao)"></p>
   <div class="grid" style="margin-bottom:14px">
-   <div class="f"><label class="lbl" for="cfaixa">Faixa livre mínima (m)</label><input id="cfaixa" type="number" inputmode="decimal" step="0.01" min="0"></div>
    <div class="f"><label class="lbl" for="carv">Caixa de árvore mínima (m²)</label><input id="carv" type="number" inputmode="decimal" step="0.01" min="0"></div>
+   <div class="f"><label class="lbl" for="cfaixa">Faixa livre mínima (m)</label><input id="cfaixa" type="number" inputmode="decimal" step="0.01" min="0"></div>
   </div>
   <button class="btn ghost" id="cfgx">Fechar configurações</button>
  </section>
@@ -244,6 +245,7 @@ body.prev .gear{display:none}
   <h2>Cadastro prévio de processo</h2>
   <p class="lbl" style="margin-top:0">Cadastre antes da vistoria. No dia, o processo já aparece na lista como "A vistoriar", com estes dados preenchidos.</p>
   <div class="grid">
+   <div class="f"><label class="lbl" for="c_tipo">Tipo de processo</label><select id="c_tipo"><option value="habite">Habite-se</option><option value="regul">Auto de regularização</option><option value="acess">Acessibilidade</option></select></div>
    <div class="f"><label class="lbl" for="c_proc">Nº do processo</label><input id="c_proc"></div>
    <div class="f"><label class="lbl" for="c_insc">Inscrição imobiliária</label><input id="c_insc" autocomplete="off"></div>
    <div class="f"><label class="lbl" for="c_data">Data da vistoria</label><input id="c_data" type="date"></div>
@@ -267,7 +269,7 @@ body.prev .gear{display:none}
   <div class="acc" style="margin-top:0">
    <button type="button" class="acch sec" id="acch_fl" data-acc="fl" aria-expanded="false" aria-controls="accb_fl"><span>Filtros e ações<span class="n" id="flsum" style="display:block"></span></span><span class="chev" aria-hidden="true">&#9662;</span></button>
    <div class="accb" id="accb_fl" hidden>
-  <div class="bar"><button class="btn" id="cadb">Cadastrar processo</button><button class="btn ghost" id="novo">Novo relatório</button><select id="fan" aria-label="Filtrar por analista" style="width:auto;min-width:190px"></select><input id="busca" placeholder="Buscar por nº do processo ou endereço" aria-label="Buscar relatório" style="flex:1;min-width:200px"></div>
+  <div class="bar"><button class="btn" id="cadb">Cadastrar processo</button><button class="btn ghost" id="novo">Novo relatório</button><select id="ftipo" aria-label="Filtrar por tipo de processo" style="width:auto;min-width:170px"><option value="">Todos os tipos</option><option value="habite">Habite-se</option><option value="regul">Auto de regularização</option><option value="acess">Acessibilidade</option></select><select id="fan" aria-label="Filtrar por analista" style="width:auto;min-width:190px"></select><input id="busca" placeholder="Buscar por nº do processo ou endereço" aria-label="Buscar relatório" style="flex:1;min-width:200px"></div>
   <div class="bar" style="margin-top:8px;align-items:center"><input id="fdt" type="date" aria-label="Filtrar por data da vistoria" style="width:auto"><button class="btn ghost sm" id="fhoje">Hoje</button><button class="btn ghost sm" id="fall">Todas as datas</button><button class="btn ghost sm" id="fmuro" type="button" aria-pressed="false">Só imóveis sem muro</button><button class="btn ghost sm" id="fresp" type="button" aria-pressed="false">Só sem responsável</button></div>
   <div class="bar" style="margin-top:8px;align-items:center"><input id="respdia" placeholder="Responsável pela vistoria do dia" aria-label="Responsável pela vistoria do dia" autocomplete="off" style="flex:1;min-width:200px"><button class="btn sm" id="respdiab" type="button">Preencher o dia</button></div>
   <p class="lbl" style="margin:6px 0 0">Escolha a data acima, digite o responsável e toque em “Preencher o dia”: o nome entra em todos os processos daquela data e já vem preenchido nos próximos que forem cadastrados ou tiverem essa data. Em cada processo ainda dá para trocar.</p>
@@ -313,6 +315,7 @@ body.prev .gear{display:none}
  <section>
   <h2>Identificação do processo</h2>
   <div class="grid">
+   <div class="f noprint"><label class="lbl" for="tsel">Tipo de processo</label><select id="tsel"><option value="habite">Habite-se</option><option value="regul">Auto de regularização</option><option value="acess">Acessibilidade</option></select></div>
    <div class="f"><label class="lbl" for="proc">Nº do processo</label><input id="proc" data-k="proc"></div>
    <div class="f"><label class="lbl" for="insc">Inscrição imobiliária</label><input id="insc" data-k="insc" autocomplete="off"></div>
    <div class="f"><span class="lbl">Localização no mapa</span><div id="ginfo"></div><div class="noprint" style="margin-top:6px"><label class="lbl" for="maps">Link do Google Maps (opcional)</label><input id="maps" data-k="maps" inputmode="url" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Cole aqui o link ou as coordenadas"></div></div>
@@ -394,7 +397,6 @@ body.prev .gear{display:none}
   <div class="row"><span>O imóvel está fechado?</span><div class="tri" role="group" aria-label="O imóvel está fechado?"><button class="n" data-c="fechado" data-v="Sim">Sim</button><button class="s" data-c="fechado" data-v="Não">Não</button></div></div>
   <div class="row"><span>O imóvel foi localizado?</span><div class="tri" role="group" aria-label="O imóvel foi localizado?"><button class="s" data-c="naoloc" data-v="Não">Sim</button><button class="n" data-c="naoloc" data-v="Sim">Não</button></div></div>
   <div class="row"><span>O imóvel possui pendência?</span><div class="tri" role="group" aria-label="O imóvel possui pendência?"><button class="n" data-c="pend" data-v="Sim">Sim</button><button class="s" data-c="pend" data-v="Não">Não</button></div></div>
-  <div class="row r3" id="rconc" hidden><span>Resultado da vistoria de acessibilidade</span><div class="tri t3" role="group" aria-label="Resultado da vistoria de acessibilidade"><button class="s" data-c="conc" data-v="Atende">Atende</button><button class="z" data-c="conc" data-v="Atende parcialmente">Atende parcialmente</button><button class="n" data-c="conc" data-v="Não atende">Não atende</button></div></div>
  </section>
 
  <section class="noprint" id="pvsec" hidden>
@@ -437,7 +439,7 @@ const blank=()=>({id:"r"+Date.now().toString(36),f:{},c:{},m:{},o:{},p:[],t:Date
 let S=blank(),DB=null,timer=null,dirty=false;
 const FIXOS=["Maisa Fugita","Francisco Arlon","Carol Pinheiro"];
 const LOTES=["Granville","Conviver","Jardim Monte Verde","Cajuí","Cidade 2000"];
-let CFG={lotes:[{n:"Granville",m:""},{n:"Conviver",m:"2.5"},{n:"Jardim Monte Verde",m:"2"},{n:"Cajuí",m:"2"},{n:"Cidade 2000",m:""}],faixa:"1.2",arv:"2",mapa:"google",ordem:["Cidade 2000","Mirante do Leste","Cajuí","Conviver","Jardim Monte Verde"]};
+let CFG={lotes:[{n:"Granville",m:""},{n:"Conviver",m:"2.5"},{n:"Jardim Monte Verde",m:"2"},{n:"Cajuí",m:"2"},{n:"Cidade 2000",m:""}],arv:"2",faixa:"1.2",mapa:"google",ordem:["Cidade 2000","Mirante do Leste","Cajuí","Conviver","Jardim Monte Verde"]};
 try{const c=localStorage.getItem("relfoto_cfg");if(c)CFG=Object.assign(CFG,JSON.parse(c));else{const o=JSON.parse(localStorage.getItem("relfoto_minc")||"{}");Object.keys(o).forEach(k=>{const l=CFG.lotes.find(z=>z.n.toLowerCase()===k);if(l&&o[k]!=="")l.m=o[k]})}}catch(e){}
 function cfgSave(){try{localStorage.setItem("relfoto_cfg",JSON.stringify(CFG))}catch(e){}}
 const num=v=>{const n=parseFloat(String(v==null?"":v).replace(",","."));return isNaN(n)?null:n};
@@ -455,7 +457,8 @@ function pends(x){if((x.tipo||"habite")==="acess")return pendsA(x);const p=[],av
  CHECKS.forEach(([k,t,inv])=>{if(x.c[k]===(inv===true?"Sim":"Não"))p.push(inv===true||k==="arban"?t.replace(/\?$/,"")+": marcado como "+x.c[k]:t+": marcado como Não")});
  const c=num(x.m.tcalcada),mn=minOf(x);
  if(c!==null){if(mn===null)av.push("Defina a calçada mínima deste loteamento em Configurações para conferir a medida da calçada.");else if(c<mn)p.push(`Calçada com ${fmt(c)} m, abaixo do mínimo de ${fmt(mn)} m permitido no loteamento`)}
- const fm=num(CFG.faixa)??1.2,am=num(CFG.arv)??2,f=num(x.m.faixa);if(f!==null&&f<fm)p.push(`Faixa livre com ${fmt(f)} m, abaixo do mínimo de ${fmt(fm)} m`);
+ const fl=num(x.m.faixa),fm=num(CFG.faixa)??1.2;if(fl!==null&&fl<fm)p.push(`Faixa livre com ${fmt(fl)} m, abaixo do mínimo de ${fmt(fm)} m (NBR 9050)`);
+ const am=num(CFG.arv)??2;
  const l=num(x.m.arvL),a=num(x.m.arvC);if(l!==null&&a!==null&&l*a<am)p.push(`Caixa de árvore com ${fmt(l*a)} m², abaixo do mínimo de ${fmt(am)} m²`);
  const ans=CHECKS.some(([k])=>x.c[k])||["tcalcada","faixa","arvL","arvC"].some(k=>num(x.m[k])!==null);
  return{p,av,ans}}
@@ -467,7 +470,7 @@ const addr=x=>[x.f.rua,x.f.numero&&"nº "+x.f.numero,x.f.quadra&&"Quadra "+x.f.q
 function norm(o){o.o=o.o||{};if(o.f.end&&!o.f.rua)o.f.rua=o.f.end;delete o.f.end;prefill(o);if(typeof rdPre==="function")rdPre(o);return o}
 /* Revistoria: condições e medidas partem da última vistoria que tenha esses dados (fotos e observações começam vazias).
    O preenchimento só existe na tela até alguém mexer; enquanto nada mudou, o processo continua "A revistoriar". */
-const SIT=["fechado","pend","naoloc","conc"];
+const SIT=["fechado","pend","naoloc"];
 const vz=v=>v==null||String(v).trim()==="";
 function bRev(x){const h=x.hist||[];for(let i=h.length-1;i>=0;i--){const c={},m={};let any=false;
  Object.keys(h[i].c||{}).forEach(k=>{if(!SIT.includes(k)&&h[i].c[k]){c[k]=h[i].c[k];any=true}});
@@ -482,7 +485,7 @@ function prefill(o){if(!(o.hist||[]).length||o.conf||(o.p||[]).length||!vz(o.f.o
  const b=bRev(o);if(!b)return;o.c=Object.assign({},b.c);o.m=Object.assign({},b.m);o.o=Object.assign({},b.o)}
 const feito=x=>!soPre(x)&&(x.p.length>0||Object.values(x.c).some(Boolean)||Object.values(x.m).some(v=>String(v).trim()!==""));
 const fd=d=>d?d.split("-").reverse().join("/"):"";
-const sitTxt=c=>[c.fechado==="Sim"&&"O imóvel estava fechado",c.naoloc==="Sim"&&"Imóvel não localizado",c.pend&&"Possui pendência: "+c.pend,c.conc&&"Resultado: "+c.conc].filter(Boolean).join("; ");
+const sitTxt=c=>[c.fechado==="Sim"&&"O imóvel estava fechado",c.naoloc==="Sim"&&"Imóvel não localizado",c.pend&&"Possui pendência: "+c.pend].filter(Boolean).join("; ");
 function snapHTML(h){const rows=[],cs=CHECKS.filter(([k])=>h.c[k]).map(([k,t])=>t.replace(/ \(.*\)/,"")+": "+h.c[k]+(((h.o||{})[k]||"").trim()?" ("+h.o[k].trim()+")":""));
  const ms=(ehA()?MEDS:MEDS.concat([["arvL","Caixa de árvore - largura"],["arvC","Caixa de árvore - comprimento"]])).filter(([k])=>String(h.m[k]||"").trim()).map(([k,t,u])=>t+": "+fmt(num(h.m[k]))+" "+(u||"m"));
  return `<h3 class="grp">${h.n}ª vistoria${h.data?" - "+fd(h.data):""}</h3>
@@ -510,7 +513,7 @@ async function pdfVist(sel){await flush();const h=S.hist||[];if(!h.length)return
 function rvPaint(){const h=S.hist||[],b=bRev(S);$("rvinfo").hidden=!h.length;if(!h.length)return;
  $("rvtx").textContent=b?"Revistoria ("+(h.length+1)+"ª vistoria): as condições e as medidas partem da vistoria "+(b.data?"de "+fd(b.data):"nº "+b.n)+". Confira e altere só o que mudou. Fotos e observações começam vazias.":"Revistoria ("+(h.length+1)+"ª vistoria): a vistoria anterior não tem condições nem medidas para copiar.";
  $("rvrec").hidden=$("rvlim").hidden=!b}
-function tipoPaint(){const n=(S.hist||[]).length;$("tipoL").textContent=TIPO?"Tipo de processo: "+TIPOS[TIPO]+(n?" - "+(n+1)+"ª vistoria (revistoria)":""):""}
+function tipoPaint(){const n=(S.hist||[]).length;if($("tsel"))$("tsel").value=S.tipo||TIPO||"habite";$("tipoL").textContent=TIPO?"Tipo de processo: "+TIPOS[TIPO]+(n?" - "+(n+1)+"ª vistoria (revistoria)":""):""}
 function arquivar(o){o.hist=(o.hist||[]).concat({n:(o.hist||[]).length+1,data:o.f.data||"",c:o.c,m:o.m,o:o.o||{},p:o.p,obs:o.f.obs||"",resp:(o.f.resp||"").trim(),pend:pends(o).p,t:Date.now(),def:o.def||0,pl:o.pl||""});delete o.def;delete o.pl;o.c={};o.m={};o.o={};o.p=[];o.f.obs=""}
 function pedirData(){return new Promise(res=>{const m=$("rvm"),d=$("rvd");d.value="";m.hidden=false;d.focus();try{d.showPicker()}catch(e){}
  const fim=v=>{m.hidden=true;$("rvok").onclick=null;$("rvno").onclick=null;res(v)};
@@ -684,7 +687,6 @@ const semResp=x=>feito(x)&&(!(x.f.resp||"").trim()||(x.hist||[]).some(h=>!(h.res
 const semMuro=x=>{const m=x.c.muro||((x.hist||[]).slice().reverse().map(h=>(h.c||{}).muro).find(Boolean));return m==="Não"};
 async function list(){let a=[];try{a=DB?await dbAll():[]}catch(e){}
  {let l=0;a.forEach(x=>{const d=x.f&&x.f.data,r=((x.f&&x.f.resp)||"").trim();if(d&&r&&!RD[d]){RD[d]=r;l=1}});if(l)rdSave()}
- a=a.filter(x=>(x.tipo||"habite")===TIPO);
  const nm=x=>(x.f.analista||"").trim(),key=x=>nm(x).toLowerCase(),nomes={};
  FIXOS.forEach(n=>nomes[n.toLowerCase()]=n);
  a.forEach(x=>{if(nm(x)&&!nomes[key(x)])nomes[key(x)]=nm(x)});
@@ -693,8 +695,8 @@ async function list(){let a=[];try{a=DB?await dbAll():[]}catch(e){}
  sel.value=[...sel.options].some(o=>o.value===atual)?atual:"";
  a.sort((x,y)=>(x.f.data||"9").localeCompare(y.f.data||"9")||y.t-x.t);const q=$("busca").value.trim().toLowerCase(),n={};
  a.forEach(x=>{const k=(x.f.proc||"").trim();if(k)n[k]=(n[k]||0)+1});
- let v=a.filter(x=>((x.f.proc||"")+" "+(x.f.insc||"")+" "+addr(x)).toLowerCase().includes(q)&&(!sel.value||(sel.value==="__sem"?!key(x):key(x)===sel.value))&&(!$("fdt").value||x.f.data===$("fdt").value)&&(!FMURO||semMuro(x))&&(!FRESP||semResp(x)));
- const fs=[];if(FMURO)fs.push("sem muro");if(FRESP)fs.push("sem responsável");if($("fdt").value)fs.push("data "+fd($("fdt").value));if(sel.value)fs.push(sel.options[sel.selectedIndex].text);if(q)fs.push("busca “"+$("busca").value.trim()+"”");
+ let v=a.filter(x=>((x.f.proc||"")+" "+(x.f.insc||"")+" "+addr(x)).toLowerCase().includes(q)&&(!sel.value||(sel.value==="__sem"?!key(x):key(x)===sel.value))&&(!$("ftipo").value||(x.tipo||"habite")===$("ftipo").value)&&(!$("fdt").value||x.f.data===$("fdt").value)&&(!FMURO||semMuro(x))&&(!FRESP||semResp(x)));
+ const fs=[];if(FMURO)fs.push("sem muro");if(FRESP)fs.push("sem responsável");if($("ftipo").value)fs.push(TIPOS[$("ftipo").value]);if($("fdt").value)fs.push("data "+fd($("fdt").value));if(sel.value)fs.push(sel.options[sel.selectedIndex].text);if(q)fs.push("busca “"+$("busca").value.trim()+"”");
  $("flsum").textContent=fs.length?"Ativos: "+fs.join(" · "):"Nenhum filtro ativo";
  const vAg=v.filter(x=>!feito(x)),vOk=v.filter(x=>feito(x)&&!x.def),vDf=v.filter(x=>feito(x)&&x.def);
  $("nag").textContent="("+vAg.length+")";$("nok").textContent="("+vOk.length+")";$("ndf").textContent="("+vDf.length+")";
@@ -704,11 +706,11 @@ async function list(){let a=[];try{a=DB?await dbAll():[]}catch(e){}
   const g={};arr.forEach(x=>{const k=agr?(key(x)||"__sem"):"__todos";(g[k]=g[k]||[]).push(x)});
   const ks=Object.keys(g).sort((x,y)=>x==="__sem"?1:y==="__sem"?-1:x.localeCompare(y));
   const ROT={};if(view==="ag")ks.forEach(k=>{g[k]=rotaOrdem(g[k],ROT)});
-  const item=x=>{const k=(x.f.proc||"").trim(),fe=feito(x),hn=(x.hist||[]).length,re=!fe&&hn>0,df=fe&&!!x.def,np=fe?pends(x).p.length:0,gp=gUrl(x),rt=ROT[x.id];return `<div class="rel${x.id===S.id?" cur":""}">${fe||re?`<button class="gear" type="button" data-gear="${x.id}" aria-label="Opções do processo ${esc(k)}" title="Opções do processo">&#9881;&#xFE0E;</button>`:""}<div><strong>${rt?rt.n+". ":""}Processo ${esc(k)||"sem número"}</strong> <span class="st ${df?"df":(x.c.fechado==="Sim"||x.c.naoloc==="Sim")?"rv":fe?"ok2":re?"rv":"ag"}">${df?"Deferido":x.c.fechado==="Sim"?"Imóvel fechado":x.c.naoloc==="Sim"?"Imóvel não localizado":fe?(hn?"Vistoriado ("+(hn+1)+"ª)":"Vistoriado"):re?"A revistoriar":"A vistoriar"}</span>${fe&&x.pl?` <span class="st pl">Pendência lançada em ${fd(x.pl)}</span>`:fe&&!df&&np?` <span class="st pn">Pendência a lançar</span>`:""}${n[k]>1?' <span class="dup">número repetido</span>':""}<div class="lbl">${x.f.data?"Vistoria "+fd(x.f.data)+" - ":""}${esc(addr(x)||"Sem endereço")}${x.f.lote?" - "+esc(x.f.lote):""}${!agr&&nm(x)?" - Analista: "+esc(nm(x)):""} - ${x.p.length} foto(s)${df?" - deferido em "+defTxt(x):""}${np?` - <span class="dup">${np} pendência(s)</span>`:""}${semResp(x)?' - <span class="dup">sem responsável</span>':""}${rt&&rt.d!=null?` - ${fmtDist(rt.d)} da parada anterior`:""}${rt&&rt.sc?" - sem coordenada (final da rota)":""}</div></div><div class="bar"><button class="btn ghost sm" data-open="${x.id}">Abrir</button>${fe?`<button class="btn sm" data-pdf="${x.id}">PDF</button>`:""}${gp?`<a class="btn ghost sm" href="${esc(gp)}" target="_blank" rel="noopener">Mapa</a>`:""}${fe&&!df&&np&&!x.pl?`<button class="btn sm" data-pl="${x.id}">Pendência lançada</button>`:""}${fe&&!df?`<button class="btn sm" data-def="${x.id}">Deferido</button>`:""}<button class="btn ghost sm" data-del="${x.id}">Excluir</button></div></div>`};
+  const item=x=>{const k=(x.f.proc||"").trim(),fe=feito(x),hn=(x.hist||[]).length,re=!fe&&hn>0,df=fe&&!!x.def,np=fe?pends(x).p.length:0,gp=gUrl(x),rt=ROT[x.id];return `<div class="rel${x.id===S.id?" cur":""}">${fe||re?`<button class="gear" type="button" data-gear="${x.id}" aria-label="Opções do processo ${esc(k)}" title="Opções do processo">&#9881;&#xFE0E;</button>`:""}<div><strong>${rt?rt.n+". ":""}Processo ${esc(k)||"sem número"}</strong> <span class="st tp">${TIPOS[x.tipo||"habite"]}</span> <span class="st ${df?"df":(x.c.fechado==="Sim"||x.c.naoloc==="Sim")?"rv":fe?"ok2":re?"rv":"ag"}">${df?"Deferido":x.c.fechado==="Sim"?"Imóvel fechado":x.c.naoloc==="Sim"?"Imóvel não localizado":fe?(hn?"Vistoriado ("+(hn+1)+"ª)":"Vistoriado"):re?"A revistoriar":"A vistoriar"}</span>${fe&&x.pl?` <span class="st pl">Pendência lançada em ${fd(x.pl)}</span>`:fe&&!df&&np?` <span class="st pn">Pendência a lançar</span>`:""}${n[k]>1?' <span class="dup">número repetido</span>':""}<div class="lbl">${x.f.data?"Vistoria "+fd(x.f.data)+" - ":""}${esc(addr(x)||"Sem endereço")}${x.f.lote?" - "+esc(x.f.lote):""}${!agr&&nm(x)?" - Analista: "+esc(nm(x)):""} - ${x.p.length} foto(s)${df?" - deferido em "+defTxt(x):""}${np?` - <span class="dup">${np} pendência(s)</span>`:""}${semResp(x)?' - <span class="dup">sem responsável</span>':""}${rt&&rt.d!=null?` - ${fmtDist(rt.d)} da parada anterior`:""}${rt&&rt.sc?" - sem coordenada (final da rota)":""}</div></div><div class="bar"><button class="btn ghost sm" data-open="${x.id}">Abrir</button>${fe?`<button class="btn sm" data-pdf="${x.id}">PDF</button>`:""}${gp?`<a class="btn ghost sm" href="${esc(gp)}" target="_blank" rel="noopener">Mapa</a>`:""}${fe&&!df&&np&&!x.pl?`<button class="btn sm" data-pl="${x.id}">Pendência lançada</button>`:""}${fe&&!df?`<button class="btn sm" data-def="${x.id}">Deferido</button>`:""}<button class="btn ghost sm" data-del="${x.id}">Excluir</button></div></div>`};
   $(box).innerHTML=ks.length?ks.map(k=>(k==="__todos"?"":`<h3 class="grp">${k==="__sem"?"Sem analista":esc(nomes[k])} <span class="lbl">(${g[k].length})</span></h3>`)+g[k].map(item).join("")).join(""):'<p class="empty">'+(view==="df"?"Nenhum processo deferido ainda.":view==="ok"?"Nenhum relatório salvo encontrado.":"Nenhum processo a vistoriar encontrado. Use “Cadastrar processo” para incluir.")+'</p>'};
  pinta("ag",vAg,"lista");pinta("ok",vOk,"lista2");pinta("df",vDf,"lista3");accPaint()}
-async function openRep(id){await flush();const x=(await dbAll()).find(r=>r.id===id);if(x){S=norm(x);cur();paint();list();tela("form")}}
-async function newRep(){await flush();S=blank();paint();list();tela("form");$("proc").focus()}
+async function openRep(id){await flush();const x=(await dbAll()).find(r=>r.id===id);if(x){S=norm(x);S.tipo=S.tipo||"habite";TIPO=S.tipo;aplicaTipo(TIPO);cur();paint();list();tela("form")}}
+async function newRep(){await flush();const t=$("ftipo").value||TIPO||"habite";TIPO=t;aplicaTipo(t);S=blank();paint();list();tela("form");$("proc").focus()}
 async function delRep(id){if(!confirm("Excluir este relatório e suas fotos? Não dá para desfazer."))return;try{await dbDel(id)}catch(e){}
  if(id===S.id){dirty=false;S=blank();paint();if(emForm())tela("lista")}list()}
 const $=id=>document.getElementById(id);
@@ -724,15 +726,14 @@ async function storUI(){const tx=$("sttx");if(!tx)return;
  const pc=barPaint("",us,qt);
  tx.textContent=pc!==null?mb(us)+" de "+mb(qt)+" ("+pc+"% usado)":"este navegador não informa o limite";
  $("stsub").textContent="Tudo o que este site guarda neste aparelho (relatórios com fotos e arquivos do app para uso offline). Só os relatórios salvos aqui: "+mb(rel)+" ("+qtd+" relatório"+(qtd===1?"":"s")+")."}
-function tela(t){$("vlista").hidden=t!=="lista";$("vform").hidden=t!=="form";$("homeb").hidden=t!=="lista";$("listab").hidden=t!=="form";$("cabn").style.display=t==="lista"?"none":"";scrollTo(0,0)}
+function tela(t){$("tipoL").hidden=t==="lista";$("vlista").hidden=t!=="lista";$("vform").hidden=t!=="form";$("homeb").hidden=t!=="lista";$("listab").hidden=t!=="form";$("cabn").style.display=t==="lista"?"none":"";scrollTo(0,0)}
 const emForm=()=>!$("vform").hidden;
 function save(){pend();dirty=true;clearTimeout(timer);timer=setTimeout(flush,400)}
 const OPC3=[["Tem","s"],["Não tem","n"],["N/A","z"]];
 function aplicaTipo(t){const a=t==="acess";CHECKS=a?CHECKS_A:t==="regul"?CHECKS_R:CHECKS_H;MEDS=a?MEDS_A:MEDS_H;
  $("hchk").textContent=a?"Checklist de Acessibilidade":"Condições do imóvel";$("chkdica").hidden=!a;
  $("hmed").textContent=a?"Medidas de acessibilidade":"Recuos e calçada";$("meddica").hidden=!a;
- $("planbox").style.display=a?"none":"";$("arvbox").style.display=a?"none":"";$("sedif").hidden=!a;$("rconc").hidden=!a;
- $("fmuro").hidden=a;if(a){FMURO=false;$("fmuro").setAttribute("aria-pressed","false")}
+ $("planbox").style.display=a?"none":"";$("arvbox").style.display=a?"none":"";$("sedif").hidden=!a;
  build()}
 function build(){
  $("checks").innerHTML=CHECKS.map(([k,t,inv])=>inv==="a"?`<div class="row r3"><span>${t}</span><div class="tri t3" role="group" aria-label="${t}">${OPC3.map(([v,c])=>`<button class="${c}" data-c="${k}" data-v="${v}">${v}</button>`).join("")}</div></div><div class="onote" data-on="${k}" hidden><input data-o="${k}" autocomplete="off" placeholder="Descreva (o que falta, ou o motivo do N/A)" aria-label="Descrição: ${t}"></div>`:`<div class="row"><span>${t}</span><div class="tri" role="group" aria-label="${t}"><button class="${inv?"n":"s"}" data-c="${k}" data-v="Sim">Sim</button><button class="${inv?"s":"n"}" data-c="${k}" data-v="Não">Não</button></div></div>`).join("");
@@ -780,7 +781,7 @@ function pv(on){document.body.classList.toggle("prev",on);$("pvbar").hidden=!on;
 $("pvgo").onclick=()=>pdfVist($("pvsel").value);
 $("prev").onclick=()=>pv(true);$("pvx").onclick=()=>pv(false);$("pvp").onclick=()=>$("print").click();
 function cfgPaint(){gUI();$("cfgl").innerHTML=CFG.lotes.map((z,i)=>`<div class="row"><strong>${esc(z.n)}</strong><div class="bar" style="align-items:center"><div class="unit"><input type="number" inputmode="decimal" step="0.01" min="0" data-cl="${i}" value="${esc(z.m)}" aria-label="Calçada mínima de ${esc(z.n)}" style="width:100px"><span>m</span></div><button class="btn ghost sm" data-cr="${i}">Remover</button></div></div>`).join("");
- $("cfaixa").value=CFG.faixa;$("carv").value=CFG.arv;
+ $("carv").value=CFG.arv;$("cfaixa").value=CFG.faixa;
  $("mpst").textContent="Mapa principal: "+mapaNome()+". Os botões “Mapa” e os links de localização abrem o ponto no "+mapaNome()+".";
  $("mpalt").textContent="Alternar para "+(CFG.mapa==="osm"?"Google Maps":"OpenStreetMap");$("cord").value=(CFG.ordem||[]).join("\n")}
 $("cord").oninput=e=>{CFG.ordem=e.target.value.split("\n").map(t=>t.trim()).filter(Boolean);cfgApply()};
@@ -792,12 +793,15 @@ $("cfgl").oninput=e=>{const i=e.target.dataset.cl;if(i===undefined)return;CFG.lo
 $("cfgl").onclick=e=>{const i=e.target.dataset.cr;if(i===undefined)return;if(!confirm("Remover o loteamento "+CFG.lotes[+i].n+" da lista?"))return;CFG.lotes.splice(+i,1);cfgPaint();cfgApply()};
 $("nladd").onclick=()=>{const n=$("nln").value.trim();if(!n)return;if(CFG.lotes.some(z=>z.n.toLowerCase()===n.toLowerCase())){alert("Esse loteamento já está na lista.");return}
  CFG.lotes.push({n,m:$("nlm").value});$("nln").value="";$("nlm").value="";cfgPaint();cfgApply()};
-$("cfaixa").oninput=e=>{CFG.faixa=e.target.value;cfgApply()};$("carv").oninput=e=>{CFG.arv=e.target.value;cfgApply()};
-async function escolher(t){await flush();TIPO=t;aplicaTipo(t);
- const a=(DB?await dbAll():[]).filter(x=>(x.tipo||"habite")===t).sort((x,y)=>y.t-x.t);let c=null;try{c=localStorage.getItem("relfoto_cur")}catch(e){}
- S=norm(a.find(x=>x.id===c)||a[0]||blank());S.tipo=t;$("tipoL").textContent="Tipo de processo: "+TIPOS[t];
+$("carv").oninput=e=>{CFG.arv=e.target.value;cfgApply()};
+$("cfaixa").oninput=e=>{CFG.faixa=e.target.value;cfgApply()};
+async function escolher(){await flush();if(!TIPO)TIPO="habite";
+ const a=(DB?await dbAll():[]).sort((x,y)=>y.t-x.t);let c=null;try{c=localStorage.getItem("relfoto_cur")}catch(e){}
+ S=norm(a.find(x=>x.id===c)||a[0]||blank());S.tipo=S.tipo||"habite";TIPO=S.tipo;aplicaTipo(TIPO);
  $("home").hidden=true;$("app").hidden=false;paint();OPEN.ag=true;accSave();tela("lista");list()}
-document.querySelectorAll(".tipo").forEach(b=>b.onclick=()=>escolher(b.dataset.t));
+$("entrar").onclick=()=>escolher();
+$("ftipo").onchange=()=>list();
+$("tsel").onchange=e=>{const t=e.target.value;if(t===TIPO)return;S.tipo=t;TIPO=t;aplicaTipo(t);paint();save()};
 const voltar=async()=>{await flush();document.body.classList.remove("prev");$("pvbar").hidden=true;$("app").hidden=true;$("home").hidden=false;scrollTo(0,0);storUI()};
 $("homeb").onclick=voltar;$("homeb2").onclick=voltar;
 $("listab").onclick=async()=>{await flush();tela("lista");list()};
@@ -810,9 +814,10 @@ $("c_add").onclick=async()=>{const v={},m=$("c_msg");CAMP.forEach(k=>v[k]=$("c_"
  if(!v.proc){m.textContent="Informe o número do processo.";return}
  if(!DB){m.textContent="Este navegador não permite salvar os cadastros.";return}
  const all=await dbAll();
- if(all.some(x=>(x.tipo||"habite")===TIPO&&(x.f.proc||"").trim()===v.proc)&&!confirm("Já existe um processo com esse número neste tipo. Cadastrar mesmo assim?"))return;
+ const tp=$("c_tipo").value||"habite";
+ if(all.some(x=>(x.tipo||"habite")===tp&&(x.f.proc||"").trim()===v.proc)&&!confirm("Já existe um processo com esse número neste tipo. Cadastrar mesmo assim?"))return;
  const cn=(l,t)=>l.find(n=>n.toLowerCase()===t.toLowerCase())||t;
- const o=blank();o.f={proc:v.proc,insc:v.insc,data:v.data,analista:cn(FIXOS,v.ana),lote:cn(CFG.lotes.map(z=>z.n),v.lot),rua:v.rua,numero:v.numero,quadra:v.quadra,nlote:v.nlote,bairro:v.bairro};if(v.maps)o.f.maps=v.maps;rdPre(o);
+ const o=blank();o.tipo=tp;o.f={proc:v.proc,insc:v.insc,data:v.data,analista:cn(FIXOS,v.ana),lote:cn(CFG.lotes.map(z=>z.n),v.lot),rua:v.rua,numero:v.numero,quadra:v.quadra,nlote:v.nlote,bairro:v.bairro};if(v.maps)o.f.maps=v.maps;rdPre(o);
  try{await dbPut(o)}catch(e){m.textContent="Não foi possível salvar o cadastro (espaço cheio?).";return}
  ["proc","insc","rua","numero","quadra","nlote","maps"].forEach(k=>$("c_"+k).value="");$("c_proc").focus();
  m.textContent="Processo "+v.proc+" cadastrado. Você pode cadastrar o próximo.";list()};
@@ -847,16 +852,16 @@ async function doRota(){
  if(!DB){dmsg("Este navegador não permite acessar os relatórios salvos.");return null}
  const d=$("fdt").value,an=$("fan").value,ky=x=>(x.f.analista||"").trim().toLowerCase();
  let a=[];try{a=await dbAll()}catch(e){dmsg("Não foi possível ler os relatórios.");return null}
- a=a.filter(x=>(x.tipo||"habite")===TIPO&&!feito(x)&&(!d||x.f.data===d)&&(!an||(an==="__sem"?!ky(x):ky(x)===an)));a=rotaOrdem(a,{});
+ const tf=$("ftipo").value;a=a.filter(x=>(!tf||(x.tipo||"habite")===tf)&&!feito(x)&&(!d||x.f.data===d)&&(!an||(an==="__sem"?!ky(x):ky(x)===an)));a=rotaOrdem(a,{});
  if(!a.length){dmsg("Nenhum processo a vistoriar"+(d?" em "+fd(d):"")+(an?" para o analista filtrado":"")+".");return null}
- return{d,a,an}}
+ return{d,a,an,tf}}
 /* PDF direto da lista: abre o processo no formulário e aciona o mesmo "Gerar relatório (imprimir / PDF)" */
 async function pdfUm(id){dmsg("");
   await openRep(id);
   if(S.id!==id){dmsg("Não foi possível ler este relatório.");return}
   try{await Promise.all([...document.querySelectorAll("#photos img")].map(im=>im.decode?im.decode().catch(()=>{}):0))}catch(e){}
   $("print").click()}
-function rotaTxt(r){const L=["*ROTA DE VISTORIAS"+(r.d?" - "+fd(r.d):"")+"*",TIPOS[TIPO]+" - "+r.a.length+" imóvel(is)"];
+function rotaTxt(r){const L=["*ROTA DE VISTORIAS"+(r.d?" - "+fd(r.d):"")+"*",(r.tf?TIPOS[r.tf]+" - ":"")+r.a.length+" imóvel(is)"];
  if(r.an&&r.an!=="__sem"){const x=r.a.find(z=>(z.f.analista||"").trim().toLowerCase()===r.an);if(x)L.push("Analista: "+x.f.analista.trim())}
  const resp=d=>{const x=r.a.find(z=>(z.f.data||"")===d&&(z.f.resp||"").trim());return x?x.f.resp.trim():""};
  let dia=null,n=0;
@@ -866,7 +871,7 @@ function rotaTxt(r){const L=["*ROTA DE VISTORIAS"+(r.d?" - "+fd(r.d):"")+"*",TIP
    else L.push("","📅 *"+(dd?fd(dd):"Sem data")+"*"+(rs?" - Responsável: "+rs:""))}
   n++;
   if(fch)tg.push("🔒 O imóvel estava fechado");if(x.c.naoloc==="Sim")tg.push("🔍 Imóvel não localizado");if(x.c.pend==="Sim"||pr)tg.push("⚠️ Com pendência"+(pr?" ("+pr+")":""));
-  L.push("","*"+n+") Processo "+((f.proc||"").trim()||"sem número")+"*");
+  L.push("","*"+n+") Processo "+((f.proc||"").trim()||"sem número")+"*","Tipo: "+TIPOS[x.tipo||"habite"]);
   const e=addr(x);if(e)L.push("📍 "+e);
   if(f.lote)L.push("Loteamento: "+f.lote);
   if(tg.length)L.push(tg.join(" | "))});
