@@ -176,7 +176,7 @@ body.prev .gear{display:none}
 <div id="home" class="home">
  <h1>Relatório fotográfico</h1>
   <p class="sub">Habite-se, Auto de regularização e Acessibilidade na mesma lista</p>
- <div class="tipos"><button class="tipo" id="entrar">Vistorias</button></div>
+ <div class="tipos"><button class="tipo" id="entrar">Vistorias</button><button class="tipo" id="hentrar" style="background:var(--bg);color:var(--acc);border:2px solid var(--acc)">Histórico de alterações</button></div>
  <div class="bar" style="justify-content:center;margin-top:26px"><button class="btn ghost sm" id="bexp2">Exportar relatórios</button><label class="btn ghost sm" style="cursor:pointer">Importar relatórios<input id="bimp2" type="file" accept=".json,application/json" hidden></label></div>
  <p class="empty" id="bmsg2" role="status" style="text-align:center"></p>
  <div id="stbox" class="mini noprint" style="width:100%">
@@ -266,6 +266,7 @@ body.prev .gear{display:none}
 
  <section class="noprint">
   <h2>Processos</h2>
+  <div class="bar" style="margin:0 0 10px"><button class="btn ghost sm" id="hbtn" type="button">Histórico de alterações e movimentações</button></div>
   <div class="acc" style="margin-top:0">
    <button type="button" class="acch sec" id="acch_fl" data-acc="fl" aria-expanded="false" aria-controls="accb_fl"><span>Filtros e ações<span class="n" id="flsum" style="display:block"></span></span><span class="chev" aria-hidden="true">&#9662;</span></button>
    <div class="accb" id="accb_fl" hidden>
@@ -306,6 +307,7 @@ body.prev .gear{display:none}
  </div>
 
  <div id="vform" hidden>
+ <div class="bar noprint" style="margin:0 0 8px"><button class="btn ghost sm" id="hform" type="button">Histórico deste processo</button></div>
  <p class="sub noprint">Preencha os dados, marque as condições do imóvel, informe as medidas e adicione as fotos. Tudo é salvo neste aparelho.</p>
  <section class="noprint" id="rvinfo" hidden style="border-left:6px solid #b45309">
   <p class="lbl" id="rvtx" style="margin:0 0 8px"></p>
@@ -572,7 +574,7 @@ async function abrirGear(id){await flush();const x=(await dbAll()).find(r=>r.id=
  if(fe)o.push(["rev","Marcar para revistoria","Guarda a vistoria atual no histórico e devolve o processo à rota de vistorias."]);
  if(df)o.push(["defd","Alterar a data do deferimento","Consta deferido em "+defTxt(x)+"."]);
  if(df)o.push(["undef","Voltar para análise","Tira o processo dos deferidos e devolve aos relatórios salvos."]);
- if(!o.length)return;
+ o.push(["hist","Histórico deste processo","Mostra as alterações e movimentações registradas."]);
  $("gmt").textContent="Processo "+((x.f.proc||"").trim()||"sem número");
  $("gmb").innerHTML=o.map(([a,t,d])=>`<button type="button" class="btn ghost" data-ga="${a}" data-id="${x.id}"><strong>${t}</strong><br><span class="lbl">${d}</span></button>`).join("");
  $("gmm").hidden=false}
@@ -679,7 +681,9 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now(
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function openDB(){return new Promise((ok,no)=>{const q=indexedDB.open("relfoto_db",2);q.onupgradeneeded=()=>{const d=q.result;if(!d.objectStoreNames.contains("r"))d.createObjectStore("r",{keyPath:"id"});if(!d.objectStoreNames.contains("g"))d.createObjectStore("g",{keyPath:"id"})};q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)})}
 function tx(mode,fn){return new Promise((ok,no)=>{const t=DB.transaction("r",mode),rq=fn(t.objectStore("r"));t.oncomplete=()=>ok(rq&&rq.result);t.onerror=()=>no(t.error)})}
-const dbAll=()=>tx("readonly",s=>s.getAll()),dbPut=o=>tx("readwrite",s=>s.put(o)).then(r=>{window.syncPut&&syncPut(o);return r}),dbDel=id=>tx("readwrite",s=>s.delete(id)).then(r=>{window.syncDel&&syncDel(id);return r});
+const dbAll=()=>tx("readonly",s=>s.getAll()),dbGet=id=>tx("readonly",s=>s.get(id));
+const dbPut=async o=>{const old=window.hOld?await hOld(o.id):null;const r=await tx("readwrite",s=>s.put(o));window.syncPut&&syncPut(o);try{window.hLog&&hLog(old,o)}catch(e){}return r};
+const dbDel=async id=>{const old=window.hOld?await hOld(id):null;const r=await tx("readwrite",s=>s.delete(id));window.syncDel&&syncDel(id);try{window.hLogDel&&hLogDel(old,id)}catch(e){}return r};
 function cur(){try{localStorage.setItem("relfoto_cur",S.id)}catch(e){}}
 async function flush(){clearTimeout(timer);if(!dirty)return;if(!DB){$("msg").textContent="Este navegador não permite salvar os relatórios. Gere o PDF antes de sair.";return}
  try{dirty=false;S.t=Date.now();await dbPut(S);cur();$("msg").textContent="";await list()}catch(e){dirty=true;$("msg").textContent="Não foi possível salvar (espaço cheio?). Gere o PDF e exclua relatórios antigos."}}
@@ -726,7 +730,7 @@ async function storUI(){const tx=$("sttx");if(!tx)return;
  const pc=barPaint("",us,qt);
  tx.textContent=pc!==null?mb(us)+" de "+mb(qt)+" ("+pc+"% usado)":"este navegador não informa o limite";
  $("stsub").textContent="Tudo o que este site guarda neste aparelho (relatórios com fotos e arquivos do app para uso offline). Só os relatórios salvos aqui: "+mb(rel)+" ("+qtd+" relatório"+(qtd===1?"":"s")+")."}
-function tela(t){$("tipoL").hidden=t==="lista";$("vlista").hidden=t!=="lista";$("vform").hidden=t!=="form";$("homeb").hidden=t!=="lista";$("listab").hidden=t!=="form";$("cabn").style.display=t==="lista"?"none":"";scrollTo(0,0)}
+function tela(t){$("tipoL").hidden=t==="lista"||t==="hist";$("vlista").hidden=t!=="lista";$("vform").hidden=t!=="form";if($("vhist"))$("vhist").hidden=t!=="hist";$("homeb").hidden=t!=="lista";$("listab").hidden=t==="lista";$("cabn").style.display=t==="form"?"":"none";scrollTo(0,0)}
 const emForm=()=>!$("vform").hidden;
 function save(){pend();dirty=true;clearTimeout(timer);timer=setTimeout(flush,400)}
 const OPC3=[["Tem","s"],["Não tem","n"],["N/A","z"]];
@@ -945,7 +949,7 @@ async function importar(file){const m=$("bmsg");m.textContent="";let j;
   const e=at[r.id];if(!e){nv++;ap.push(r)}else if(r.t>(e.t||0)){up++;ap.push(r)}else ig++});
  if(!ap.length){m.textContent="Nada a importar: os "+ig+" relatório(s) do arquivo já estão no aparelho"+(iv?" ("+iv+" inválido(s) ignorado(s))":"")+".";return}
  if(!confirm("O arquivo tem "+j.relatorios.length+" relatório(s): "+nv+" novo(s) e "+up+" mais recente(s) que os do aparelho. Importar "+ap.length+"? Nada será apagado."))return;
- let k=0;try{for(const r of ap){m.textContent="Importando "+(++k)+" de "+ap.length+"...";await dbPut(r)}}catch(e){m.textContent="Importação interrompida (espaço cheio?). "+(k-1)+" relatório(s) foram importados.";list();return}
+ let k=0;window.hModo="import";try{for(const r of ap){m.textContent="Importando "+(++k)+" de "+ap.length+"...";await dbPut(r)}}catch(e){window.hModo="";m.textContent="Importação interrompida (espaço cheio?). "+(k-1)+" relatório(s) foram importados.";list();return}window.hModo="";
  if(j.config&&Array.isArray(j.config.lotes)){j.config.lotes.forEach(z=>{if(!z||!z.n)return;const l=CFG.lotes.find(q=>q.n.toLowerCase()===String(z.n).toLowerCase());if(!l)CFG.lotes.push({n:String(z.n),m:z.m==null?"":String(z.m)});else if(l.m===""&&z.m)l.m=String(z.m)});cfgSave()}
  if(j.geo&&Array.isArray(j.geo.pts)&&!GEO){GEO=j.geo;GEO.id="geo";try{await gTx("readwrite",s=>s.put(GEO))}catch(e){}gBuild()}
  const ab=ap.find(r=>r.id===S.id);if(ab)S=norm(ab);
@@ -954,7 +958,7 @@ $("bexp").onclick=exportar;$("bimp").onchange=e=>{if(e.target.files[0])importar(
 $("clear").onclick=()=>delRep(S.id);$("novo").onclick=newRep;$("busca").oninput=list;$("fan").onchange=list;
 document.addEventListener("click",e=>{const t=e.target;if(t.dataset.open)openRep(t.dataset.open);if(t.dataset.pdf)pdfUm(t.dataset.pdf);if(t.dataset.del)delRep(t.dataset.del);if(t.dataset.def)marcarDef(t.dataset.def,true);if(t.dataset.pl)lancarPend(t.dataset.pl);if(t.dataset.gear)abrirGear(t.dataset.gear)});
 $("gmx").onclick=()=>{$("gmm").hidden=true};
-$("gmb").onclick=e=>{const b=e.target.closest("[data-ga]");if(!b)return;const a=b.dataset.ga,id=b.dataset.id;$("gmm").hidden=true;if(a==="rev")revistoriar(id);else if(a==="tirar")tirarRevistoria(id);else if(a==="undef")marcarDef(id,false);else if(a==="defd")alterarDef(id);else if(a==="pl")lancarPend(id);else if(a==="plx")removerPl(id);else if(a==="pdfv")openRep(id).then(()=>{const e=$("pvsec");if(e&&!e.hidden)e.scrollIntoView()})};
+$("gmb").onclick=e=>{const b=e.target.closest("[data-ga]");if(!b)return;const a=b.dataset.ga,id=b.dataset.id;$("gmm").hidden=true;if(a==="rev")revistoriar(id);else if(a==="tirar")tirarRevistoria(id);else if(a==="undef")marcarDef(id,false);else if(a==="defd")alterarDef(id);else if(a==="pl")lancarPend(id);else if(a==="plx")removerPl(id);else if(a==="hist")hAbrir(id);else if(a==="pdfv")openRep(id).then(()=>{const e=$("pvsec");if(e&&!e.hidden)e.scrollIntoView()})};
 addEventListener("pagehide",flush);
 ["proc","insc","numero","quadra","nlote","c_proc","c_insc","c_numero","c_quadra","c_nlote","busca"].forEach(id=>{const e=$(id);e.setAttribute("autocapitalize","none");e.setAttribute("autocorrect","off");e.spellcheck=false});
 ["rua","bairro","lote","analista","c_rua","c_bairro","nln"].forEach(id=>$(id).setAttribute("autocapitalize","words"));
@@ -969,6 +973,7 @@ build();
 <script src="drive-config.js"></script>
 <script src="shared-config.js"></script>
 <script src="shared.js"></script>
+<script src="historico.js"></script>
 <script>
 /* Integração com Google Drive (login OAuth + envio de relatórios).
    Usa Google Identity Services (token client) e a Drive API v3. */

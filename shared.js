@@ -90,6 +90,7 @@ async function sync(manual){
   }finally{busy=false}
 }
 
+window.syncMuted=()=>mute;
 window.syncPut=o=>{if(!ok||mute||!o||!o.id)return;const p=pend();p[o.id]="put";setPend(p);clearTimeout(window.__shT);window.__shT=setTimeout(sync,800)};
 window.syncDel=id=>{if(!ok||mute)return;const p=pend();p[id]="del";p[id+"#t"]=Date.now();setPend(p);clearTimeout(window.__shT);window.__shT=setTimeout(sync,300)};
 

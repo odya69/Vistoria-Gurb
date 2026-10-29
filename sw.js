@@ -1,4 +1,4 @@
-const CACHE = "vistorias-v26";
+const CACHE = "vistorias-v27";
 const ARQUIVOS = [
   "./",
   "./index.html",
@@ -6,6 +6,7 @@ const ARQUIVOS = [
   "./drive-config.js",
   "./shared-config.js",
   "./shared.js",
+  "./historico.js",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",
