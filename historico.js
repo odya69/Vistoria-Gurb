@@ -148,24 +148,56 @@ window.hLogDel=function(old,id){
 
 async function rpc(fn,args){
   const body=JSON.stringify(args);
-  const r=await fetch(C.URL.replace(/\/$/,"")+"/rest/v1/rpc/"+fn,{method:"POST",headers:{"Content-Type":"application/json",apikey:C.KEY},body,keepalive:body.length<60000});
-  const txt=await r.text();let j=null;try{j=JSON.parse(txt)}catch(e){}
-  if(!r.ok)throw new Error((j&&j.message)||txt);
+  const ctl=typeof AbortController!=="undefined"?new AbortController():null;
+  let to=false;const tm=setTimeout(()=>{to=true;try{ctl&&ctl.abort()}catch(e){}},30000);
+  let r,txt;
+  try{
+    r=await fetch(C.URL.replace(/\/$/,"")+"/rest/v1/rpc/"+fn,{method:"POST",headers:{"Content-Type":"application/json",apikey:C.KEY},body,keepalive:body.length<60000,signal:ctl?ctl.signal:undefined});
+    txt=await r.text();
+  }catch(e){const x=new Error(to?"tempo esgotado":((e&&e.message)||"falha de rede"));x.rede=true;throw x}
+  finally{clearTimeout(tm)}
+  let j=null;try{j=JSON.parse(txt)}catch(e){}
+  if(!r.ok){const x=new Error((j&&j.message)||txt||("HTTP "+r.status));x.status=r.status;x.code=j&&j.code;throw x}
   return j;
 }
-let ocupado=false;
+let ocupado=false,falhas=0,proxTent=0;
+const KBAD="relfoto_hist_bad";
+/* erro causado pelos dados do evento (e não pela rede): vale isolar o evento ruim em vez de travar a fila toda */
+const erroDeDados=e=>!!e&&!e.rede&&(e.status===400||e.status===422||/^2[23]/.test(String(e.code||"")));
 async function enviar(forca){
   if(!ok||ocupado)return;
   const q=fila(),agora=Date.now();
+  if(!forca&&agora<proxTent)return;
   const pronto=q.filter(e=>forca||agora-e.t>=(ATRASO[e.acao]||500));
   if(!pronto.length)return;
   ocupado=true;pronto.forEach(e=>FLY.add(e.eid));
+  const mk=e=>({eid:e.eid,rid:e.rid,t:e.t,autor:e.autor,acao:e.acao,proc:e.proc,tipo:e.tipo,end:e.end,resumo:e.resumo,det:e.det});
+  const tira=ids=>salva(fila().filter(e=>!ids.has(e.eid)));
   try{
-    const evs=pronto.map(e=>({eid:e.eid,rid:e.rid,t:e.t,autor:e.autor,acao:e.acao,proc:e.proc,tipo:e.tipo,end:e.end,resumo:e.resumo,det:e.det}));
-    await rpc("rel_hist_add",{p:"",evs});
-    const ids=new Set(pronto.map(e=>e.eid));salva(fila().filter(e=>!ids.has(e.eid)));
+    try{
+      await rpc("rel_hist_add",{p:"",evs:pronto.map(mk)});
+      tira(new Set(pronto.map(e=>e.eid)));
+    }catch(e){
+      if(pronto.length>1&&erroDeDados(e)){
+        /* um evento com problema não pode impedir os outros: envia um por um e separa o defeituoso */
+        for(const ev of pronto){
+          try{await rpc("rel_hist_add",{p:"",evs:[mk(ev)]});tira(new Set([ev.eid]))}
+          catch(e2){
+            if(erroDeDados(e2)){
+              try{const bad=JSON.parse(ls.g(KBAD)||"[]");bad.push({t:Date.now(),erro:String(e2.message).slice(0,200),ev});ls.s(KBAD,JSON.stringify(bad.slice(-20)))}catch(x){}
+              tira(new Set([ev.eid]));
+            }else throw e2;
+          }
+        }
+      }else throw e;
+    }
+    falhas=0;proxTent=0;window.__histErr=null;
     if(telaAberta())carrega(true);
-  }catch(e){/* fica na fila; tenta de novo depois */}
+  }catch(e){
+    /* fica na fila; tenta de novo com espera crescente (5 s, 10 s, ... até 5 min) e guarda o motivo para o Diagnóstico */
+    falhas++;proxTent=Date.now()+Math.min(300000,5000*Math.pow(2,falhas-1));
+    window.__histErr={t:Date.now(),msg:(e&&e.status?"HTTP "+e.status+" ":"")+(e&&e.code?e.code+" ":"")+String((e&&e.message)||e).slice(0,200)};
+  }
   finally{pronto.forEach(e=>FLY.delete(e.eid));ocupado=false}
 }
 setInterval(()=>{enviar()},5000);

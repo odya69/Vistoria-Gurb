@@ -1,4 +1,4 @@
-const CACHE = "vistorias-v27";
+const CACHE = "vistorias-v28";
 const ARQUIVOS = [
   "./",
   "./index.html",
@@ -13,8 +13,14 @@ const ARQUIVOS = [
   "./icons/apple-touch-icon.png"
 ];
 
+// Instalação tolerante: se um arquivo (ex.: um ícone) não existir, o resto é guardado mesmo assim.
+// Antes, um único 404 derrubava a instalação inteira e o aparelho ficava preso na versão antiga.
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => Promise.allSettled(ARQUIVOS.map(u => c.add(u))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", e => {
@@ -25,11 +31,28 @@ self.addEventListener("activate", e => {
   );
 });
 
+// Rede primeiro; se a rede demorar mais de 5 s ou falhar, usa o cache (evita ficar travado em sinal fraco)
+function redePrimeiro(req, chave) {
+  return new Promise(resolve => {
+    let fim = false;
+    const usaCache = () => caches.match(chave || req).then(h => { if (!fim && h) { fim = true; resolve(h); } });
+    const t = setTimeout(usaCache, 5000);
+    fetch(req).then(r => {
+      clearTimeout(t);
+      if (r.ok) { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(chave || req, c)); }
+      if (!fim) { fim = true; resolve(r); }
+    }).catch(() => {
+      clearTimeout(t);
+      caches.match(chave || req).then(h => { if (!fim) { fim = true; resolve(h || Response.error()); } });
+    });
+  });
+}
+
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
-  // Google (login/Drive) e outros domínios: sempre pela rede, sem cache
+  // Supabase, Google (login/Drive) e outros domínios: sempre pela rede, sem cache
   if (url.origin !== location.origin) return;
 
   // Dados grandes (GeoJSON do mapa): o app controla a atualização; não passa pelo cache do service worker
@@ -37,26 +60,17 @@ self.addEventListener("fetch", e => {
 
   // Navegação: rede primeiro (pega versão nova), cache como reserva offline
   if (req.mode === "navigate") {
-    e.respondWith(
-      fetch(req).then(r => {
-        const copia = r.clone();
-        caches.open(CACHE).then(c => c.put("./index.html", copia));
-        return r;
-      }).catch(() => caches.match("./index.html"))
-    );
+    e.respondWith(redePrimeiro(req, "./index.html"));
     return;
   }
 
-  // Configuração do Drive: rede primeiro, para a edição valer na hora
-  if ((url.pathname.endsWith("/drive-config.js")||url.pathname.endsWith("/shared-config.js")||url.pathname.endsWith("/shared.js"))) {
-    e.respondWith(
-      fetch(req).then(r => { const c = r.clone(); caches.open(CACHE).then(ca => ca.put(req, c)); return r; })
-        .catch(() => caches.match(req))
-    );
+  // Todo código e configuração (.js, .html, .webmanifest): rede primeiro, para as correções chegarem em todos os aparelhos
+  if (/\.(js|html|webmanifest)$/.test(url.pathname)) {
+    e.respondWith(redePrimeiro(req));
     return;
   }
 
-  // Demais arquivos: cache primeiro, atualiza em segundo plano
+  // Imagens e ícones: cache primeiro, atualiza em segundo plano
   e.respondWith(
     caches.match(req).then(hit => {
       const rede = fetch(req).then(r => {

@@ -147,3 +147,104 @@ end $$;
 
 revoke execute on function public.rel_hist_add(text, jsonb), public.rel_hist_list(text, text, bigint, integer) from public;
 grant  execute on function public.rel_hist_add(text, jsonb), public.rel_hist_list(text, text, bigint, integer) to anon, authenticated;
+
+
+-- ============================================================
+-- ATUALIZAÇÃO v2 DA SINCRONIZAÇÃO (rode junto; pode repetir sem problema)
+-- Corrige: aparelhos que não baixavam por timeout, escritas ignoradas em silêncio
+-- por causa de relógio errado, e dá ao app informações para mostrar o erro certo.
+-- ============================================================
+
+-- 1) Mais tempo para o papel anon (o padrão do Supabase é ~3 s e estoura com relatórios com muitas fotos)
+alter role anon set statement_timeout = '30s';
+
+-- 2) Hora do servidor: o app mede o quanto o relógio de cada aparelho está errado
+create or replace function public.rel_agora(p text) returns bigint
+language sql security definer set search_path = public as $$
+  select (extract(epoch from clock_timestamp()) * 1000)::bigint;
+$$;
+
+-- 3) Download em páginas: nunca devolve tudo de uma vez.
+--    Devolve {rows:[...], mais:true/false}; sempre inclui ao menos 1 relatório por página.
+create or replace function public.rel_list_pag(p text, since bigint, maxbytes integer default 2500000, maxrows integer default 30) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare r jsonb; ha boolean := false; ult bigint;
+begin
+  if not public._rel_ok(p) then raise exception 'senha_invalida'; end if;
+  maxrows := least(greatest(coalesce(maxrows, 30), 1), 200);
+  maxbytes := greatest(coalesce(maxbytes, 2500000), 100000);
+  with base as (
+    select id, atualizado,
+           coalesce(pg_column_size(dados), 0) + 300 as sz,
+           row_number() over (order by atualizado, id) as rn
+    from relatorios where atualizado > since
+    order by atualizado, id
+    limit maxrows + 1
+  ), acc as (
+    select id, atualizado, rn, sum(sz) over (order by atualizado, id) as total from base
+  ), pick as (
+    select id, atualizado, rn from acc
+    where rn <= maxrows and (rn = 1 or total <= maxbytes)
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'id', x.id, 'tipo', x.tipo, 'dados', x.dados, 't', x.t, 'apagado', x.apagado, 'atualizado', x.atualizado)
+           order by x.atualizado, x.id), '[]'::jsonb),
+         max(x.atualizado)
+    into r, ult
+  from pick k join relatorios x on x.id = k.id;
+  if ult is not null then
+    select exists(select 1 from relatorios where atualizado > ult) into ha;
+  end if;
+  return jsonb_build_object('rows', r, 'mais', ha);
+end $$;
+
+-- 4) Gravar informando se foi aceito. t no futuro (relógio adiantado) é limitado a "agora + 1 min",
+--    para um aparelho com a hora errada não bloquear as edições dos outros.
+create or replace function public.rel_put2(p text, rid text, rtipo text, rdados jsonb, rt bigint) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare ts bigint := (extract(epoch from clock_timestamp()) * 1000)::bigint;
+        t2 bigint; n integer; tsrv bigint;
+begin
+  if not public._rel_ok(p) then raise exception 'senha_invalida'; end if;
+  t2 := least(coalesce(rt, 0), ts + 60000);
+  insert into relatorios (id, tipo, dados, t, apagado, atualizado)
+  values (rid, rtipo, rdados, t2, false, ts)
+  on conflict (id) do update
+    set tipo = excluded.tipo, dados = excluded.dados, t = excluded.t, apagado = false, atualizado = excluded.atualizado
+    where relatorios.t <= excluded.t;
+  get diagnostics n = row_count;
+  select t into tsrv from relatorios where id = rid;
+  return jsonb_build_object('ts', ts, 'aceito', n > 0, 't', tsrv);
+end $$;
+
+create or replace function public.rel_del2(p text, rid text, rt bigint) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare ts bigint := (extract(epoch from clock_timestamp()) * 1000)::bigint;
+        t2 bigint; n integer; tsrv bigint;
+begin
+  if not public._rel_ok(p) then raise exception 'senha_invalida'; end if;
+  t2 := least(coalesce(rt, 0), ts + 60000);
+  insert into relatorios (id, tipo, dados, t, apagado, atualizado)
+  values (rid, null, null, t2, true, ts)
+  on conflict (id) do update
+    set dados = null, t = excluded.t, apagado = true, atualizado = excluded.atualizado
+    where relatorios.t <= excluded.t;
+  get diagnostics n = row_count;
+  select t into tsrv from relatorios where id = rid;
+  return jsonb_build_object('ts', ts, 'aceito', n > 0, 't', tsrv);
+end $$;
+
+revoke execute on function public.rel_agora(text), public.rel_list_pag(text,bigint,integer,integer),
+  public.rel_put2(text,text,text,jsonb,bigint), public.rel_del2(text,text,bigint) from public;
+grant execute on function public.rel_agora(text), public.rel_list_pag(text,bigint,integer,integer),
+  public.rel_put2(text,text,text,jsonb,bigint), public.rel_del2(text,text,bigint) to anon, authenticated;
+
+-- 5) Limpeza única (segura de repetir)
+-- 5a) relatórios que ficaram com t no futuro por causa de relógio errado voltam a aceitar edições dos outros aparelhos
+update public.relatorios set t = least(t, atualizado) where t > atualizado + 60000;
+-- 5b) registros "lixo" de exclusão criados por um defeito antigo do app (id terminando em #t)
+delete from public.relatorios where id like '%#t' and apagado;
+
+-- 6) Faz o Supabase enxergar as funções novas na hora
+notify pgrst, 'reload schema';
+notify pgrst, 'reload config';
